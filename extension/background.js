@@ -8,8 +8,25 @@ const storage = chrome.storage.local;
 // Sends a message to content scripts running in the current tab
 const message = content => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-    let activeTab = tabs[0];
-    chrome.tabs.sendMessage(activeTab.id, content);
+    let activeTabID = tabs[0].id;
+
+    chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
+      if (response && response.pong) {
+        // Content script is ready
+        chrome.tabs.sendMessage(activeTabID, content);
+      } else {
+        // No listener on the other end
+        chrome.tabs.executeScript(activeTabID, { file: "content.js" }, () => {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError);
+            throw Error("Unable to inject script into tab " + activeTabID);
+          }
+
+          // OK, now it's injected and ready
+          chrome.tabs.sendMessage(activeTabID, content);
+        });
+      }
+    });
   });
 };
 
@@ -244,7 +261,7 @@ const preprocessText = text => {
 
 const createFrequencyMap = text => {
   // TODO: Remove HTML elements
-  let tokens = preprocessText(text.strip());
+  let tokens = preprocessText(text.replace(/^\s+|\s+$/g, ""));
 
   let frequencyMap = {};
   for (let token in tokens) {
@@ -286,7 +303,6 @@ chrome.runtime.onConnect.addListener(port => {
       // TODO: Rank Smart Replies with the following formula:
       // R_i = w_1*sim(subjectVec_i, subjectVec) + w_2*sim(emailVec_i, emailVec)
       //       + w_3*(authorFreq_i / totalAuthorFreq_i) + w_4*sim(smartReplyVec_i, smartReplyVec)
-      //
 
       let rankedSmartReplies = [
         { label: "Test reply #1.", email: "This is a test email (#1)." },
