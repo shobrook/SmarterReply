@@ -2,8 +2,7 @@
   "name": "Smart(er) Reply for Gmail",
   "description": "Create custom email responses for Gmail Smart Reply.",
   "version": "0.0.1",
-  "manifest_version": 1,
-  /* "content_security_policy": "script-src 'self' https://connect.facebook.net; object-src 'self'", */
+  "manifest_version": 2,
   "permissions": [
     "contextMenus",
     "identity",
@@ -17,10 +16,7 @@
     "default_icon": "assets/icon.png",
     "default_popup": "extension/popup/index.html"
   },
-  /* "web_accessible_resources": ["extension/libraries/d3.v4.min.js"], */
-  "background": {
-    "scripts": ["extension/background.js"]
-  },
+  "background": { "scripts": ["extension/background.js"] },
   "content_scripts": [
     {
       "matches": [
@@ -29,10 +25,7 @@
         "http://www.mail.google.com/*",
         "https://www.mail.google.com/*"
       ],
-      "js": [
-        /* "extension/libraries/jquery-3.2.1.min.js", */
-        "extension/content.js"
-      ],
+      "js": ["extension/content.js"],
       "run_at": "document_end"
     }
   ]
