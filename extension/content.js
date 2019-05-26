@@ -2,12 +2,12 @@
  * HELPERS *
  ***********/
 
-const injectJSPayload = (payload, args = '') => {
+const injectJSPayload = (payload, args = "") => {
   // Injecting scraper JS payload
   let script = document.createElement("script");
-  script.textContent = `(${payload.toString()})(${args.toString()})`;
+  script.textContent = `(${payload.toString()})(${JSON.stringify(args)})`;
   document.head.appendChild(script);
-}
+};
 
 /************
  * PAYLOADS *
@@ -19,7 +19,8 @@ const scraperPayload = () => {
   setInterval(() => {
     let newURL = window.location.href;
 
-    if (currentURL != newURL) { // URL change
+    if (currentURL != newURL) {
+      // URL change
       currentURL = newURL;
 
       let subdomain = newURL.split("mail.google.com/mail/u/0/#")[1];
@@ -31,21 +32,21 @@ const scraperPayload = () => {
 
         // Smart Reply elements are present
         if (typeof smartReplies !== "undefined" && smartReplies.length > 0) {
-          let receivedEmailAuthor = document.getElementsByClassName("gD");
+          let receivedEmailAuthor = document.getElementsByClassName("go")[0];
           let receivedEmailSubject = document.getElementsByClassName("hP")[0];
           let receivedEmail = document.getElementsByClassName("a3s aXjCH ")[0];
 
           // Send scraped email content to the content script
           window.postMessage(
             {
-              type: "scrapedEmailContent",
+              title: "scrapedEmailContent",
               value: {
-                author: receivedEmailAuthor[receivedEmailAuthor.length - 1]
-                  .getAttribute("email")
-                  .strip(),
-                subject: receivedEmailSubject.innerHTML,
-                email: receivedEmail.innerHTML,
-								smartReplies: [for (reply of smartReplies) reply.innerHTML]
+                author: receivedEmailAuthor.innerText
+                  .replace("<", "")
+                  .replace(">", ""),
+                subject: receivedEmailSubject.innerText,
+                email: receivedEmail.innerText,
+                smartReplies: smartReplies.map(reply => reply.innerText)
               }
             },
             "*"
@@ -61,7 +62,6 @@ const scraperPayload = () => {
   //   let targetElems = Array.from(document.getElementsByClassName("ams bkH"));
   //
   //   if (typeof targetElems !== "undefined" && targetElems.length > 0) {
-  //     console.log("Alert!");
   //   }
   // });
   //
@@ -69,61 +69,45 @@ const scraperPayload = () => {
   //   subtree: true,
   //   attributes: true
   // });
-
-  const injectEmailIntoContainer = (email) => {
-    let emailContainer = document.getElementsByClassName("Am Al editable LW-avf")[0];
-    if (emailContainer !== "undefined" && emailContainer != null) {
-      document.getElementsByClassName("Am Al editable LW-avf")[0].innerText = email;
-    } else {
-      setTimeout(() => injectEmailIntoContainer(email), 200)
-    }
-  }
-
-	const createNewSmartReply = (label, email) => {
-		let smartRepliesContainer = document.getElementsByClassName("brb")[0];
-		let clonedNode = smartRepliesContainer.lastChild.cloneNode(true);
-
-		clonedNode.innerHTML = `<div style='height: 10px; width: 10px; border-radius: 50%; margin-right: 8px; background-color: #1a73e8;'></div>${label}`;
-    clonedNode.addEventListener("click", () => {
-      injectEmailIntoContainer(email)
-    }, false);
-
-		smartRepliesContainer.appendChild(clonedNode);
-	}
 };
 
-const customSmartReplyPayload = (smartReplies) => {
-  const injectEmailIntoContainer = (email) => {
-    let emailContainer = document.getElementsByClassName("Am Al editable LW-avf")[0];
+const customSmartReplyPayload = smartReplies => {
+  const injectEmailIntoContainer = email => {
+    let emailContainer = document.getElementsByClassName(
+      "Am Al editable LW-avf"
+    )[0];
     if (emailContainer !== "undefined" && emailContainer != null) {
-      document.getElementsByClassName("Am Al editable LW-avf")[0].innerText = email;
+      emailContainer.innerText = email;
     } else {
-      setTimeout(() => injectEmailIntoContainer(email), 200)
+      setTimeout(() => injectEmailIntoContainer(email), 200);
     }
-  }
+  };
 
   const createNewSmartReply = (label, email) => {
     let smartRepliesContainer = document.getElementsByClassName("brb")[0];
     let clonedNode = smartRepliesContainer.lastChild.cloneNode(true);
-
     clonedNode.innerHTML = `<div style='height: 10px; width: 10px; border-radius: 50%; margin-right: 8px; background-color: #1a73e8;'></div>${label}`;
-    clonedNode.addEventListener("click", () => {
-      injectEmailIntoContainer(email)
-    }, false);
+    clonedNode.addEventListener(
+      "click",
+      () => {
+        injectEmailIntoContainer(email);
+      },
+      false
+    );
 
     smartRepliesContainer.appendChild(clonedNode);
-  }
+  };
 
   // Creates smart reply HTML elements
-  for (let smartReply in smartReplies) {
-    createNewSmartReply(smartReply.label, smartReply.email);
+  for (let idx in smartReplies) {
+    createNewSmartReply(smartReplies[idx].label, smartReplies[idx].email);
     // TODO: Limit the # of visible smart replies to three; create a "Load More"
     // button
   }
 
   // TODO: Create a "New Custom Smart Reply" button and append to the list of
   // Smart Reply elements
-}
+};
 
 /*******************
  * MESSAGE PASSING *
@@ -131,7 +115,10 @@ const customSmartReplyPayload = (smartReplies) => {
 
 // Listens for the "injectScraper" event from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.message == "injectScraper") {
+  if (request.ping) {
+    sendResponse({ pong: true });
+    return;
+  } else if (request.message === "injectScraper") {
     injectJSPayload(scraperPayload);
   }
 });
@@ -143,21 +130,21 @@ const port = chrome.runtime.connect(
 );
 
 port.onMessage.addListener(msg => {
-  if (msg.type === "injectSmartReplies") {
+  if (msg.title === "injectSmartReplies") {
     injectJSPayload(customSmartReplyPayload, msg.smartReplies);
   }
 });
 
 // Listens for messages from injected scripts
 window.addEventListener("message", event => {
-  if (event.data.type === "scrapedEmailContent") {
+  if (event.data.title === "scrapedEmailContent") {
     // Retrieves scraped email content and sends to the background script
     port.postMessage({
       title: "scrapedEmailContent",
       author: event.data.value.author,
       subject: event.data.value.subject,
-      emailFreqMap: event.data.value.email,
-			smartReplies: event.data.value.smartReplies
+      email: event.data.value.email,
+      smartReplies: event.data.value.smartReplies
     });
   } else if (event.data.type == "newCustomSmartReply") {
     // Do things
@@ -178,11 +165,3 @@ window.addEventListener("message", event => {
  * 7. Content script sends the custom reply to the background script, which
  *    stores it
  */
-
-/* PLAN B */
-// background.js sends "injectPayload" event along with everything from storage
-// injection.js injects the payload, scrapes stuff, passes it to content script,
-// then preprocesses it and ranks the smart replies, then sends it back to the
-// injection
-// If "plus" button is clicked in injection, message is passed to content, which
-// is then passed to background
