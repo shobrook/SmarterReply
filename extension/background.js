@@ -12,6 +12,7 @@ const message = content => {
 
     chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
       if (response && response.pong) {
+        console.log("Sending injectScraper event to content script.");
         // Content script is ready
         chrome.tabs.sendMessage(activeTabID, content);
       } else {
@@ -277,11 +278,14 @@ const createFrequencyMap = text => {
  *******************/
 
 // Tells content script to inject the JS payload for scraping emails
-chrome.webNavigation.onCompleted.addListener(details => {
-  if (details.url.includes("mail.google.com")) {
+// chrome.webNavigation.onCompleted.addListener(details => {
+chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
+  if (changeInfo.status == "complete" && tab.url.includes("mail.google.com")) {
     message({ message: "injectScraper" });
   }
 });
+
+// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) { alert(changeInfo.status); if (changeInfo.status == 'complete') { } });
 
 // Listens for incoming messages from the content scripts
 chrome.runtime.onConnect.addListener(port => {
@@ -305,8 +309,10 @@ chrome.runtime.onConnect.addListener(port => {
       //       + w_3*(authorFreq_i / totalAuthorFreq_i) + w_4*sim(smartReplyVec_i, smartReplyVec)
 
       let rankedSmartReplies = [
-        { label: "Test reply #1.", email: "This is a test email (#1)." },
-        { label: "Test reply #2.", email: "This is a test email (#2)." }
+        { label: "Piss off mate.", email: "Piss off mate." },
+        { label: "I prefer neither.", email: "I prefer neither." },
+        { label: "Stop talking to me.", email: "Stop talking to me." },
+        { label: "Who are you?", email: "Who are you?" }
       ];
       port.postMessage({
         title: "injectSmartReplies",
