@@ -123,7 +123,7 @@ const customSmartReplyPayload = smartReplies => {
     }
   }
 
-  if (hiddenSmartReplies) {
+  if (hiddenSmartReplies !== undefined && hiddenSmartReplies.length > 0) {
     var isExpanded = false;
     createNewSmartElement(
       `<span style='color: #767676;'>>></span>`,
@@ -131,7 +131,6 @@ const customSmartReplyPayload = smartReplies => {
         if (!isExpanded) {
           let smartRepliesContainer = document.getElementsByClassName("brb")[0];
           for (let idx in hiddenSmartReplies) {
-            console.log("Gets here!");
             smartRepliesContainer.insertBefore(
               hiddenSmartReplies[idx],
               smartRepliesContainer.childNodes[
@@ -151,12 +150,16 @@ const customSmartReplyPayload = smartReplies => {
     );
   }
 
+  // TODO: Listen for message from content script to create a new smart reply
+
   // Creates a "New Custom Smart Reply" button
   createNewSmartElement(
     `<b style='color: #767676;'>＋</b>`,
     () => {
       let canvas = document.createElement("div");
       let createSmartReply = document.createElement("div");
+
+      // TODO: Clean this up by creating a "style" element and appending it to body
 
       canvas.style.backgroundColor = "rgba(0,0,0,.35)";
       canvas.style.zIndex = "2147483647";
@@ -193,17 +196,17 @@ const customSmartReplyPayload = smartReplies => {
                         margin-top: 20px;\
                         margin-left: auto;\
                         margin-right: auto;`;
-      let defaultButtonCSS = `border: none;
-                              color: #fff;
-                              font-family: sans-serif;
-                              font-size: 14px;
-                              position: relative;
-                              height: 40px;
-                              border-radius: 5px;
-                              width: 225px;
-                              cursor: pointer;
+      let defaultButtonCSS = `border: none;\
+                              color: #fff;\
+                              font-family: sans-serif;\
+                              font-size: 14px;\
+                              position: relative;\
+                              height: 40px;\
+                              border-radius: 5px;\
+                              width: 225px;\
+                              cursor: pointer;\
                               outline: none;`;
-      let titlePlaceholder = "Title";
+      let labelPlaceholder = "Title";
       let emailPlaceholder = "Your custom email response";
 
       createSmartReply.innerHTML = `<div id="createSmartReplyHeader" style="color: #FFFFFF; padding-left: 35px; padding-right: 35px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; background-color: #d93025; position: relative; height: 42px; border-radius: 10px 10px 0px 0px;">
@@ -211,7 +214,7 @@ const customSmartReplyPayload = smartReplies => {
                                       <a id="exitButton" style="font-weight: 100 !important; font-size: 24px; cursor: pointer;">×</a>
                                     </div>
                                     <div id="createSmartReplyBody">
-                                      <textarea id="replyTitle" autofocus required placeholder="${titlePlaceholder}" style="${defaultTextCSS} height: 26px; white-space: nowrap;"></textarea>
+                                      <textarea id="replyTitle" autofocus required placeholder="${labelPlaceholder}" style="${defaultTextCSS} height: 26px; white-space: nowrap;"></textarea>
                                       <textarea id="replyContent" placeholder="${emailPlaceholder}" style="${defaultTextCSS} height: 120px;"></textarea>
                                     </div>
                                     <div id="createButtons" style="margin-top: 20px; padding-left: 35px; padding-right: 35px; display: flex; align-items: center; justify-content: space-between;">
@@ -223,7 +226,7 @@ const customSmartReplyPayload = smartReplies => {
       document.body.appendChild(createSmartReply);
 
       // Form content
-      let titleContent = document.getElementById("replyTitle");
+      let labelContent = document.getElementById("replyTitle");
       let emailContent = document.getElementById("replyContent");
 
       // Buttons
@@ -232,30 +235,41 @@ const customSmartReplyPayload = smartReplies => {
       let cancelButton = document.getElementById("cancelButton");
 
       // Changes color of input text to red if title exceeds 30 characters
-      titleContent.onkeyup = () => {
-        if (this.value.length > 30) {
-          this.style.color = "#d93025";
-        } else {
-          this.style.color = "#202124";
-        }
-      };
+      labelContent.addEventListener(
+        "keyup",
+        event => {
+          if (event.target.value.length > 30) {
+            event.target.style.color = "#d93025";
+          } else {
+            event.target.style.color = "#202124";
+          }
+        },
+        false
+      );
 
       const exitHandler = () => {
         document.body.removeChild(createSmartReply);
         document.body.removeChild(canvas);
       };
 
-      exitButton.onclick = exitHandler;
-      cancelButton.onclick = exitHandler;
-      canvas.onclick = exitHandler;
+      exitButton.addEventListener("click", exitHandler, false);
+      cancelButton.addEventListener("click", exitHandler, false);
+      canvas.addEventListener("click", exitHandler, false);
 
-      createReplyButton.onclick = () => {
-        let title = titleContent.value;
-        let email = emailContent.value;
-
-        // window.postMessage({})
-        exitHandler();
-      };
+      createReplyButton.addEventListener(
+        "click",
+        () => {
+          window.postMessage({
+            title: "newCustomSmartReply",
+            value: {
+              label: labelContent.value,
+              email: emailContent.value
+            }
+          });
+          exitHandler();
+        },
+        false
+      );
     },
     true
   );
@@ -300,21 +314,12 @@ window.addEventListener("message", event => {
       email: event.data.value.email,
       smartReplies: event.data.value.smartReplies
     });
-  } else if (event.data.type == "newCustomSmartReply") {
-    // Do things
+  } else if (event.data.title === "newCustomSmartReply") {
+    // TODO: Message injection to create a new smart reply
+    port.postMessage({
+      title: "newCustomSmartReply",
+      label: event.data.value.label,
+      email: event.data.value.email
+    });
   }
 });
-
-/*
- * 1. Background script tells the content script to inject the JS payload
- * 2. Payload scrapes email content and sends it to the content script
- * 3. Content script sends the email content to the background script
- * 4. Background script ranks custom smart replies and sends them to the content
- *    script
- * 5. Content script sends smart replies to payload, which creates and injects
- *    the smart reply HTML elements and the "Create Smart Reply" HTML element
- * 6. If the "Create Smart Reply" button is clicked, then the payload sends the
- *    custom reply to content script
- * 7. Content script sends the custom reply to the background script, which
- *    stores it
- */
