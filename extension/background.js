@@ -31,24 +31,6 @@ const message = content => {
   });
 };
 
-// TEMP: For testing only
-storage.set({
-  "This is a smart reply.": {
-    subjectFreqMap: { keyword1: 1, keyword2: 12 },
-    emailFreqMap: { keyword1: 1, keyword2: 12 },
-    authorFreqMap: [],
-    associatedSmartReplies: [],
-    emailContent: ""
-  },
-  "This is another smart reply.": {
-    subjectFreqMap: { keyword1: 1, keyword2: 12 },
-    emailFreqMap: { keyword1: 1, keyword2: 12 },
-    authors: { author1: 0, author2: 0 },
-    associatedSmartReplies: [],
-    emailContent: ""
-  }
-});
-
 /********************************
  * TEXT PREPROCESSING UTILITIES *
  ********************************/
@@ -298,28 +280,39 @@ chrome.runtime.onConnect.addListener(port => {
       let emailFreqMap = createFrequencyMap(msg.email);
       let smartReplies = msg.smartReplies;
 
-      // TODO: Pull all custom Smart Replies from storage
-      // TODO: Create BoW vectors (with TF-IDF entries) for both the subject and
-      // the email frequency maps for each Smart Reply
-      // TODO: Create vectors for the messaged subject and email frequency maps
-      // TODO: Calculate cosine similarity between each Smart Reply vector and
-      // the messaged vectors
-      // TODO: Rank Smart Replies with the following formula:
-      // R_i = w_1*sim(subjectVec_i, subjectVec) + w_2*sim(emailVec_i, emailVec)
-      //       + w_3*(authorFreq_i / totalAuthorFreq_i) + w_4*sim(smartReplyVec_i, smartReplyVec)
+      storage.get(null, smartReplies => {
+        let reformattedSmartReplies = Object.keys(smartReplies).map(label => {
+          return { label: label, email: smartReplies[label].emailContent };
+        });
 
-      let rankedSmartReplies = [
-        { label: "Piss off mate.", email: "Piss off mate." },
-        { label: "I prefer neither.", email: "I prefer neither." },
-        { label: "Stop talking to me.", email: "Stop talking to me." },
-        { label: "Who are you?", email: "Who are you?" }
-      ];
-      port.postMessage({
-        title: "injectSmartReplies",
-        smartReplies: rankedSmartReplies
+        // TODO: Pull all custom Smart Replies from storage
+        // TODO: Create BoW vectors (with TF-IDF entries) for both the subject and
+        // the email frequency maps for each Smart Reply
+        // TODO: Create vectors for the messaged subject and email frequency maps
+        // TODO: Calculate cosine similarity between each Smart Reply vector and
+        // the messaged vectors
+        // TODO: Rank Smart Replies with the following formula:
+        // R_i = w_1*sim(subjectVec_i, subjectVec) + w_2*sim(emailVec_i, emailVec)
+        //       + w_3*(authorFreq_i / totalAuthorFreq_i) + w_4*sim(smartReplyVec_i, smartReplyVec)
+
+        port.postMessage({
+          title: "injectSmartReplies",
+          smartReplies: reformattedSmartReplies
+        });
       });
     } else if (msg.title === "newCustomSmartReply") {
-      // Do things
+      storage.set(
+        {
+          [msg.label]: {
+            subjectFreqMap: {},
+            emailFreqMap: {},
+            authorFreqMap: {},
+            associatedSmartReplies: {},
+            emailContent: msg.email
+          }
+        },
+        () => {}
+      );
     }
   });
 });
