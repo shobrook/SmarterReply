@@ -45,8 +45,8 @@ const scraperPayload = () => {
                   .replace("<", "")
                   .replace(">", ""),
                 subject: receivedEmailSubject.innerText,
-                email: receivedEmail.innerText,
-                smartReplies: smartReplies.map(reply => reply.innerText)
+                email: receivedEmail.innerText
+                // smartReplies: smartReplies.map(reply => reply.innerText)
               }
             },
             "*"
@@ -58,6 +58,18 @@ const scraperPayload = () => {
 };
 
 const customSmartReplyPayload = smartReplies => {
+  let defaultReplyClass = document
+    .getElementsByClassName("brb")[0]
+    .firstChild.getAttribute("class");
+  let customReplies = Array.from(
+    document.getElementsByClassName(defaultReplyClass + " customReply")
+  );
+
+  // Delete any existing custom Smart Replies
+  for (let idx in customReplies) {
+    document.getElementsByClassName("brb")[0].removeChild(customReplies[idx]);
+  }
+
   const injectEmailIntoContainer = email => {
     let emailContainer = document.getElementsByClassName(
       "Am Al editable LW-avf"
@@ -77,7 +89,9 @@ const customSmartReplyPayload = smartReplies => {
   ) => {
     let smartRepliesContainer = document.getElementsByClassName("brb")[0];
     let clonedNode = smartRepliesContainer.lastChild.cloneNode(true);
+    clonedNodeClass = clonedNode.getAttribute("class");
 
+    clonedNode.setAttribute("class", clonedNodeClass + " customReply");
     clonedNode.innerHTML = html;
 
     if (overwriteClickHandler) {
@@ -92,33 +106,67 @@ const customSmartReplyPayload = smartReplies => {
     return clonedNode;
   };
 
+  // TODO: In each smart reply's onClick handler, scrape email content and
+  // then send to content script
+
   // Creates smart reply HTML elements
   let hiddenSmartReplies = [];
   for (let idx in smartReplies) {
     let label = smartReplies[idx].label,
       email = smartReplies[idx].email;
+    let createCSS = color => `height: 8px;\
+                              width: 8px;\
+                              border-radius: 50%;\
+                              margin-right: 8px;\
+                              background-color: ${color};\
+                              color: ${color};`;
 
-    if (idx == 0) {
-      // Red
-      createNewSmartElement(
-        `<div style='height: 8px; width: 8px; border-radius: 50%; margin-right: 8px; background-color: #EA526F;'></div><span style='color: #EA526F;'>${label}</span>`,
-        () => injectEmailIntoContainer(email)
-      );
-    } else if (idx == 1) {
-      // Green
-      createNewSmartElement(
-        `<div style='height: 8px; width: 8px; border-radius: 50%; margin-right: 8px; background-color: #35AC1A;'></div><span style='color: #35AC1A;'>${label}</span>`,
-        () => injectEmailIntoContainer(email)
-      );
+    let textColor = "";
+    if (idx === 0) {
+      textColor = "#EA526F"; // Red
+    } else if (idx === 1) {
+      textColor = "#35AC1A"; // Green
     } else {
+      textColor = "#767676"; // Grey
+    }
+
+    let smartReplyOnClickHandler = () => {
+      let receivedAuthor = document.getElementsByClassName("go")[0];
+      let receivedSubject = document.getElementsByClassName("hP")[0];
+      let receivedEmail = document.getElementsByClassName("a3s aXjCH ")[0];
+
+      window.postMessage(
+        {
+          title: "clickedSmartReply",
+          value: {
+            smartReplyLabel: label,
+            receivedAuthor: receivedAuthor.innerText
+              .replace("<", "")
+              .replace(">", ""),
+            receivedSubject: receivedSubject.innerText,
+            receivedEmail: receivedEmail.innerText
+          }
+        },
+        "*"
+      );
+
+      injectEmailIntoContainer(email);
+    };
+
+    if (idx > 1) {
       // Collapsed Smart Replies
       hiddenSmartReplies.push(
         createNewSmartElement(
-          `<div style='height: 8px; width: 8px; border-radius: 50%; margin-right: 8px; background-color: #767676;'></div><span style='color: #767676;'>${label}</span>`,
-          () => injectEmailIntoContainer(email),
+          `<div style='${createCSS(textColor)}'></div><span>${label}</span>`,
+          smartReplyOnClickHandler,
           false,
           false
         )
+      );
+    } else {
+      createNewSmartElement(
+        `<div style='${createCSS(textColor)}'></div><span>${label}</span>`,
+        smartReplyOnClickHandler
       );
     }
   }
@@ -150,8 +198,6 @@ const customSmartReplyPayload = smartReplies => {
     );
   }
 
-  // TODO: Listen for message from content script to create a new smart reply
-
   // Creates a "New Custom Smart Reply" button
   createNewSmartElement(
     `<b style='color: #767676;'>＋</b>`,
@@ -169,6 +215,8 @@ const customSmartReplyPayload = smartReplies => {
       canvas.style.left = "0px";
       canvas.style.display = "block";
       canvas.style.position = "absolute";
+
+      // font-family: 'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif
 
       createSmartReply.style.position = "fixed";
       createSmartReply.style.width = "538px";
@@ -263,7 +311,8 @@ const customSmartReplyPayload = smartReplies => {
             title: "newCustomSmartReply",
             value: {
               label: labelContent.value,
-              email: emailContent.value
+              email: emailContent.value,
+              oldSmartReplies: smartReplies
             }
           });
           exitHandler();
@@ -282,11 +331,11 @@ const customSmartReplyPayload = smartReplies => {
 // Listens for the "injectScraper" event from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.ping) {
-    console.log("Received ping. Sending pong.");
+    console.log("Received ping. Sending pong."); // TEMP
     sendResponse({ pong: true });
     return;
   } else if (request.message === "injectScraper") {
-    console.log("Injecting scraper payload.");
+    console.log("Injecting scraper payload."); // TEMP
     injectJSPayload(scraperPayload);
   }
 });
@@ -311,15 +360,29 @@ window.addEventListener("message", event => {
       title: "scrapedEmailContent",
       author: event.data.value.author,
       subject: event.data.value.subject,
-      email: event.data.value.email,
-      smartReplies: event.data.value.smartReplies
+      email: event.data.value.email
+      // smartReplies: event.data.value.smartReplies
     });
   } else if (event.data.title === "newCustomSmartReply") {
-    // TODO: Message injection to create a new smart reply
     port.postMessage({
       title: "newCustomSmartReply",
       label: event.data.value.label,
       email: event.data.value.email
+    });
+
+    let updatedSmartReplies =
+      event.data.value.oldSmartReplies +
+      [{ label: event.data.value.label, email: event.data.value.email }];
+    injectJSPayload(customSmartReplyPayload, updatedSmartReplies);
+  } else if (event.data.title === "clickedSmartReply") {
+    port.postMessage({
+      title: "customSmartReplySent",
+      smartReplyLabel: event.data.value.smartReplyLabel,
+      emailContent: {
+        receivedAuthor: event.data.value.receivedAuthor,
+        receivedSubject: event.data.value.receivedSubject,
+        receivedEmail: event.data.value.receivedEmail
+      }
     });
   }
 });
