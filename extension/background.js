@@ -1,36 +1,3 @@
-/*********************
- * GENERAL UTILITIES *
- *********************/
-
-// For calling GET and SET to the browser's local storage
-const storage = chrome.storage.local;
-
-// Sends a message to content scripts running in the current tab
-const message = content => {
-  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-    let activeTabID = tabs[0].id;
-
-    chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
-      if (response && response.pong) {
-        console.log("Sending injectScraper event to content script.");
-        // Content script is ready
-        chrome.tabs.sendMessage(activeTabID, content);
-      } else {
-        // No listener on the other end
-        chrome.tabs.executeScript(activeTabID, { file: "content.js" }, () => {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
-            throw Error("Unable to inject script into tab " + activeTabID);
-          }
-
-          // OK, now it's injected and ready
-          chrome.tabs.sendMessage(activeTabID, content);
-        });
-      }
-    });
-  });
-};
-
 /********************************
  * TEXT PREPROCESSING UTILITIES *
  ********************************/
@@ -255,64 +222,253 @@ const createFrequencyMap = text => {
   return frequencyMap;
 };
 
+const createPartialVector = (freqMap, tokenToIdxMap) => {
+  let unseenTokens = new Set([]);
+  let partialVec = new Array(Object.keys(tokenToIdxMap).length).fill(0);
+
+  Object.entries(partialVec).forEach(([token, frequency]) => {
+    if (token in tokenToIdxMap) {
+      partialVec[tokenToIdxMap[token]] = frequency;
+    } else {
+      unseenTokens.add(token);
+    }
+  });
+
+  return [partialVec, unseenTokens];
+};
+
+const updateVectors = (vectors, maxIdx) =>
+  vectors.map(vec => vec.concat(new Array(maxIdx - (vec.length - 1)).fill(0)));
+
+const dotProduct = (u, v) => {
+  console.assert(u.length === v.length);
+
+  let result = 0;
+  for (let idx in u) {
+    result += u[idx] * v[idx];
+  }
+
+  return result;
+};
+
+const cosineSim = (u, v) => {
+  console.log(u);
+  console.log(v);
+  console.log("");
+
+  console.assert(u.length === v.length);
+
+  let uNorm = 0,
+    vNorm = 0;
+  for (let idx in u) {
+    uNorm += u[idx] ** 2;
+    vNorm += v[idx] ** 2;
+  }
+
+  return dotProduct(u, v) / (uNorm * vNorm);
+};
+
 /*******************
  * MESSAGE PASSING *
  *******************/
 
 // Tells content script to inject the JS payload for scraping emails
-// chrome.webNavigation.onCompleted.addListener(details => {
 chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
   if (changeInfo.status == "complete" && tab.url.includes("mail.google.com")) {
-    message({ message: "injectScraper" });
+    // Sends a message to content scripts running in the current tab
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      let activeTabID = tabs[0].id;
+
+      chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
+        if (response && response.pong) {
+          console.log("Sending injectScraper event to content script."); // TEMP
+          // Content script is ready
+          chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
+        } else {
+          // No listener on the other end
+          chrome.tabs.executeScript(activeTabID, { file: "content.js" }, () => {
+            if (chrome.runtime.lastError) {
+              throw Error("Unable to inject script into tab " + activeTabID);
+            }
+
+            // OK, now it's injected and ready
+            chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
+          });
+        }
+      });
+    });
   }
 });
-
-// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) { alert(changeInfo.status); if (changeInfo.status == 'complete') { } });
 
 // Listens for incoming messages from the content scripts
 chrome.runtime.onConnect.addListener(port => {
   console.assert(port.name === "mainPort");
+
+  // For calling GET and SET to the browser's local storage
+  const storage = chrome.storage.local;
 
   port.onMessage.addListener(msg => {
     if (msg.title === "scrapedEmailContent") {
       let author = msg.author;
       let subjectFreqMap = createFrequencyMap(msg.subject);
       let emailFreqMap = createFrequencyMap(msg.email);
-      let smartReplies = msg.smartReplies;
+      // let neighboringSmartReplies = msg.smartReplies;
 
       storage.get(null, smartReplies => {
-        let reformattedSmartReplies = Object.keys(smartReplies).map(label => {
-          return { label: label, email: smartReplies[label].emailContent };
-        });
+        if (!("tokenToIdxMap" in smartReplies)) {
+          storage.set({ tokenToIdxMap: {} }, () => {});
+          port.postMessage({
+            title: "injectSmartReplies",
+            smartReplies: []
+          });
 
-        // TODO: Pull all custom Smart Replies from storage
-        // TODO: Create BoW vectors (with TF-IDF entries) for both the subject and
-        // the email frequency maps for each Smart Reply
-        // TODO: Create vectors for the messaged subject and email frequency maps
-        // TODO: Calculate cosine similarity between each Smart Reply vector and
-        // the messaged vectors
-        // TODO: Rank Smart Replies with the following formula:
-        // R_i = w_1*sim(subjectVec_i, subjectVec) + w_2*sim(emailVec_i, emailVec)
-        //       + w_3*(authorFreq_i / totalAuthorFreq_i) + w_4*sim(smartReplyVec_i, smartReplyVec)
+          return;
+        }
+
+        let tokenToIdxMap = smartReplies.tokenToIdxMap;
+        let subjectVec = createPartialVector(subjectFreqMap, tokenToIdxMap);
+        let emailVec = createPartialVector(emailFreqMap, tokenToIdxMap);
+
+        let rankedSmartReplies = [];
+        Object.entries(smartReplies).forEach(([replyLabel, content]) => {
+          if (replyLabel !== "tokenToIdxMap") {
+            let subjectVecs = content.subjectVecs;
+            let emailVecs = content.emailVecs;
+
+            if (emailVecs === undefined || emailVecs.length === 0) {
+              rankedSmartReplies.push({
+                label: replyLabel,
+                email: content.reply,
+                rank: 0.0
+              });
+
+              return;
+            }
+
+            let sumVecs = (acc, vec) => acc.map((elem, idx) => vec[idx] + elem);
+            let subjectSim = cosineSim(subjectVecs.reduce(sumVecs), subjectVec);
+            let emailSim = cosineSim(emailVecs.reduce(sumVecs), emailVec);
+
+            let ratioDenom = Object.values(content.authorFreqMap).reduce(
+              (acc, val) => acc + val,
+              0
+            );
+            let authorRatio =
+              author in content.authorFreqMap
+                ? content.authorFreqMap[author] / ratioDenom
+                : 0;
+
+            let features = [subjectSim, emailSim, authorRatio];
+            let weights = [0.2, 0.7, 0.1];
+
+            rankedSmartReplies.push({
+              label: replyLabel,
+              email: content.reply,
+              rank: dotProduct(features, weights)
+            });
+          }
+        });
 
         port.postMessage({
           title: "injectSmartReplies",
-          smartReplies: reformattedSmartReplies
+          smartReplies: rankedSmartReplies.sort(
+            (fstRep, sndRep) => sndRep.rank - fstRep.rank
+          )
         });
       });
     } else if (msg.title === "newCustomSmartReply") {
       storage.set(
         {
           [msg.label]: {
-            subjectFreqMap: {},
-            emailFreqMap: {},
+            subjectVecs: [],
+            emailVecs: [],
             authorFreqMap: {},
-            associatedSmartReplies: {},
-            emailContent: msg.email
+            // defaultSmartReplyVecs: [],
+            reply: msg.email
           }
         },
         () => {}
       );
+    } else if (msg.title === "customSmartReplySent") {
+      storage.get("tokenToIdxMap", tokenToIdxMap => {
+        let emailContent = msg.emailContent;
+        let subjectFreqMap = createFrequencyMap(emailContent.receivedSubject);
+        let emailFreqMap = createFrequencyMap(emailContent.receivedEmail);
+
+        let subjectVec, emailVec;
+        let unseenSubjTokens, unseenEmailTokens;
+
+        [subjectVec, unseenSubjTokens] = createPartialVector(
+          subjectFreqMap,
+          tokenToIdxMap
+        );
+        [emailVec, unseenEmailTokens] = createPartialVector(
+          emailFreqMap,
+          tokenToIdxMap
+        );
+
+        let maxTokenIdx = Object.keys(tokenToIdxMap).length - 1;
+        let unseenTokens = new Set([...unseenSubjTokens, ...unseenEmailTokens]);
+        if (unseenTokens.length > 0) {
+          unseenTokens = Array.from(unseenTokens);
+
+          for (let idx in unseenTokens) {
+            let token = unseenTokens[idx];
+            maxTokenIdx += idx + 1;
+
+            if (token in subjectFreqMap) {
+              subjectVec.push(subjectFreqMap[token]);
+            } else {
+              subjectVec.push(0);
+            }
+
+            if (token in emailFreqMap) {
+              emailVec.push(emailFreqMap[token]);
+            } else {
+              emailVec.push(0);
+            }
+
+            tokenToIdx[token] = maxTokenIdx;
+          }
+        }
+
+        storage.get(null, smartReplies => {
+          let updatedSmartReplies = { tokenToIdxMap: tokenToIdxMap };
+          Object.entries(smartReplies).forEach(([replyLabel, content]) => {
+            if (replyLabel !== "tokenToIdxMap") {
+              let updatedSubjVecs = updateVectors(
+                content.subjectVecs,
+                maxTokenIdx
+              );
+              let updatedEmailVecs = updateVectors(
+                content.emailVecs,
+                maxTokenIdx
+              );
+              let updatedAuthorFreqMap = content.authorFreqMap;
+
+              if (replyLabel === msg.smartReplyLabel) {
+                updatedSubjVecs.push(subjectVec);
+                updatedEmailVecs.push(emailVec);
+
+                if (msg.author in updatedAuthorFreqMap) {
+                  updatedAuthorFreqMap[msg.author] += 1;
+                } else {
+                  updatedAuthorFreqMap[msg.author] = 1;
+                }
+              }
+
+              updatedSmartReplies[replyLabel] = {
+                ...content,
+                subjectVecs: updatedSubjVecs,
+                emailVecs: updatedEmailVecs,
+                authorFreqMap: updatedAuthorFreqMap
+              };
+            }
+          });
+
+          storage.set(updatedSmartReplies, () => {});
+        });
+      });
     }
   });
 });
