@@ -214,8 +214,10 @@ const PorterStemmer = (() => {
 })();
 
 const preprocessText = text => {
-  text = text.toUpperCase(); // Uniform capitalization
+  text = text.replace(/^\s+|\s+$/g, ""); // Strips newlines and extra whitespace
+  text = text.replace(/<\/?[^>]+(>|$)/g, ""); // Removes HTML tags
   text = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""); // Punctuation removal
+  text = text.toUpperCase(); // Uniform capitalization
 
   // Stopword removal
   let tokens = text.split(" ").filter(token => {
@@ -227,14 +229,11 @@ const preprocessText = text => {
     return PorterStemmer(token);
   });
 
-  // TODO: Lemmatization instead of stemming
-
   return tokens;
 };
 
 const createFrequencyMap = text => {
-  // TODO: Remove HTML elements
-  let tokens = preprocessText(text.replace(/^\s+|\s+$/g, ""));
+  let tokens = preprocessText(text);
 
   let frequencyMap = {};
   for (let token in tokens) {
