@@ -2,191 +2,214 @@
  * TEXT PREPROCESSING UTILITIES *
  ********************************/
 
-const STOPWORDS = [];
+const STOPWORDS = []; // TODO: Fill this, or read from a JSON file
 
 // Porter Stemmer algorithm in pure JS
 // Taken from: https://tartarus.org/martin/PorterStemmer/js.txt
-// TODO: Smarten up this old syntax
 const PorterStemmer = (() => {
-  var step2list = {
-      ational: "ate",
-      tional: "tion",
-      enci: "ence",
-      anci: "ance",
-      izer: "ize",
-      bli: "ble",
-      alli: "al",
-      entli: "ent",
-      eli: "e",
-      ousli: "ous",
-      ization: "ize",
-      ation: "ate",
-      ator: "ate",
-      alism: "al",
-      iveness: "ive",
-      fulness: "ful",
-      ousness: "ous",
-      aliti: "al",
-      iviti: "ive",
-      biliti: "ble",
-      logi: "log"
-    },
-    step3list = {
-      icate: "ic",
-      ative: "",
-      alize: "al",
-      iciti: "ic",
-      ical: "ic",
-      ful: "",
-      ness: ""
-    },
-    c = "[^aeiou]", // consonant
-    v = "[aeiouy]", // vowel
-    C = c + "[^aeiouy]*", // consonant sequence
-    V = v + "[aeiou]*", // vowel sequence
-    mgr0 = "^(" + C + ")?" + V + C, // [C]VC... is m>0
-    meq1 = "^(" + C + ")?" + V + C + "(" + V + ")?$", // [C]VC[V] is m=1
-    mgr1 = "^(" + C + ")?" + V + C + V + C, // [C]VCVC... is m>1
-    s_v = "^(" + C + ")?" + v; // vowel in stem
+  const stepTwoList = {
+    ational: "ate",
+    tional: "tion",
+    enci: "ence",
+    anci: "ance",
+    izer: "ize",
+    bli: "ble",
+    alli: "al",
+    entli: "ent",
+    eli: "e",
+    ousli: "ous",
+    ization: "ize",
+    ation: "ate",
+    ator: "ate",
+    alism: "al",
+    iveness: "ive",
+    fulness: "ful",
+    ousness: "ous",
+    aliti: "al",
+    iviti: "ive",
+    biliti: "ble",
+    logi: "log"
+  };
+  const stepThreeList = {
+    icate: "ic",
+    ative: "",
+    alize: "al",
+    iciti: "ic",
+    ical: "ic",
+    ful: "",
+    ness: ""
+  };
 
-  return function(w) {
-    var stem,
-      suffix,
-      firstch,
-      re,
-      re2,
-      re3,
-      re4,
-      origword = w;
+  // RegEx Patterns
+  const consonant = "[^aeiou]";
+  const vowel = "[aeiouy]";
+  const consonantSeq = consonant + "[^aeiouy]*";
+  const vowelSeq = vowel + "[aeiou]*";
+  const mGRZero = "^(" + consonantSeq + ")?" + vowelSeq + consonantSeq; // [C]VC... is m > 0
+  const mEQZero =
+    "^(" +
+    consonantSeq +
+    ")?" +
+    vowelSeq +
+    consonantSeq +
+    "(" +
+    vowelSeq +
+    ")?$"; // [C]VC[V] is m = 1
+  const mGROne =
+    "^(" +
+    consonantSeq +
+    ")?" +
+    vowelSeq +
+    consonantSeq +
+    vowelSeq +
+    consonantSeq; // [C]VCVC... is m > 1
+  const vowelInStem = "^(" + consonantSeq + ")?" + vowel;
 
-    if (w.length < 3) {
-      return w;
+  return token => {
+    var stem, suffix, firstChar;
+    var fstPattern, sndPattern, thdPattern, frthPattern;
+
+    if (token.length < 3) {
+      return token;
     }
 
-    firstch = w.substr(0, 1);
-    if (firstch == "y") {
-      w = firstch.toUpperCase() + w.substr(1);
+    firstChar = token.substr(0, 1);
+    if (firstChar == "y") {
+      token = firstChar.toUpperCase() + token.substr(1);
     }
 
-    // Step 1a
-    re = /^(.+?)(ss|i)es$/;
-    re2 = /^(.+?)([^s])s$/;
+    // Step 1(a)
+    fstPattern = /^(.+?)(ss|i)es$/;
+    sndPattern = /^(.+?)([^s])s$/;
 
-    if (re.test(w)) {
-      w = w.replace(re, "$1$2");
-    } else if (re2.test(w)) {
-      w = w.replace(re2, "$1$2");
+    if (fstPattern.test(token)) {
+      token = token.replace(fstPattern, "$1$2");
+    } else if (sndPattern.test(token)) {
+      token = token.replace(sndPattern, "$1$2");
     }
 
-    // Step 1b
-    re = /^(.+?)eed$/;
-    re2 = /^(.+?)(ed|ing)$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      re = new RegExp(mgr0);
-      if (re.test(fp[1])) {
-        re = /.$/;
-        w = w.replace(re, "");
+    // Step 1(b)
+    fstPattern = /^(.+?)eed$/;
+    sndPattern = /^(.+?)(ed|ing)$/;
+
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
+      fstPattern = new RegExp(mGRZero);
+      if (fstPattern.test(fp[1])) {
+        fstPattern = /.$/;
+        token = token.replace(fstPattern, "");
       }
-    } else if (re2.test(w)) {
-      var fp = re2.exec(w);
+    } else if (sndPattern.test(token)) {
+      var fp = sndPattern.exec(token);
+
       stem = fp[1];
-      re2 = new RegExp(s_v);
-      if (re2.test(stem)) {
-        w = stem;
-        re2 = /(at|bl|iz)$/;
-        re3 = new RegExp("([^aeiouylsz])\\1$");
-        re4 = new RegExp("^" + C + v + "[^aeiouwxy]$");
-        if (re2.test(w)) {
-          w = w + "e";
-        } else if (re3.test(w)) {
-          re = /.$/;
-          w = w.replace(re, "");
-        } else if (re4.test(w)) {
-          w = w + "e";
+      sndPattern = new RegExp(vowelInStem);
+      if (sndPattern.test(stem)) {
+        token = stem;
+        sndPattern = /(at|bl|iz)$/;
+        thdPattern = new RegExp("([^aeiouylsz])\\1$");
+        frthPattern = new RegExp("^" + consonantSeq + vowel + "[^aeiouwxy]$");
+
+        if (sndPattern.test(token)) {
+          token += "e";
+        } else if (thdPattern.test(token)) {
+          fstPattern = /.$/;
+          token = token.replace(fstPattern, "");
+        } else if (frthPattern.test(token)) {
+          token += "e";
         }
       }
     }
 
-    // Step 1c
-    re = /^(.+?)y$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
+    // Step 1(c)
+    fstPattern = /^(.+?)y$/;
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
       stem = fp[1];
-      re = new RegExp(s_v);
-      if (re.test(stem)) {
-        w = stem + "i";
+      fstPattern = new RegExp(vowelInStem);
+      if (fstPattern.test(stem)) {
+        token = stem + "i";
       }
     }
 
     // Step 2
-    re = /^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
+    fstPattern = /^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
       stem = fp[1];
       suffix = fp[2];
-      re = new RegExp(mgr0);
-      if (re.test(stem)) {
-        w = stem + step2list[suffix];
+      fstPattern = new RegExp(mGRZero);
+      if (fstPattern.test(stem)) {
+        token = stem + stepTwoList[suffix];
       }
     }
 
     // Step 3
-    re = /^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
+    fstPattern = /^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
       stem = fp[1];
       suffix = fp[2];
-      re = new RegExp(mgr0);
-      if (re.test(stem)) {
-        w = stem + step3list[suffix];
+      fstPattern = new RegExp(mGRZero);
+      if (fstPattern.test(stem)) {
+        token = stem + stepThreeList[suffix];
       }
     }
 
     // Step 4
-    re = /^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;
-    re2 = /^(.+?)(s|t)(ion)$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
+    fstPattern = /^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;
+    sndPattern = /^(.+?)(s|t)(ion)$/;
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
       stem = fp[1];
-      re = new RegExp(mgr1);
-      if (re.test(stem)) {
-        w = stem;
+      fstPattern = new RegExp(mGROne);
+      if (fstPattern.test(stem)) {
+        token = stem;
       }
-    } else if (re2.test(w)) {
-      var fp = re2.exec(w);
+    } else if (sndPattern.test(token)) {
+      var fp = sndPattern.exec(token);
+
       stem = fp[1] + fp[2];
-      re2 = new RegExp(mgr1);
-      if (re2.test(stem)) {
-        w = stem;
+      sndPattern = new RegExp(mGROne);
+      if (sndPattern.test(stem)) {
+        token = stem;
       }
     }
 
     // Step 5
-    re = /^(.+?)e$/;
-    if (re.test(w)) {
-      var fp = re.exec(w);
+    fstPattern = /^(.+?)e$/;
+    if (fstPattern.test(token)) {
+      var fp = fstPattern.exec(token);
+
       stem = fp[1];
-      re = new RegExp(mgr1);
-      re2 = new RegExp(meq1);
-      re3 = new RegExp("^" + C + v + "[^aeiouwxy]$");
-      if (re.test(stem) || (re2.test(stem) && !re3.test(stem))) {
-        w = stem;
+      fstPattern = new RegExp(mGROne);
+      sndPattern = new RegExp(mEQOne);
+      thdPattern = new RegExp("^" + consonantSeq + vowel + "[^aeiouwxy]$");
+      if (
+        fstPattern.test(stem) ||
+        (sndPattern.test(stem) && !thdPattern.test(stem))
+      ) {
+        token = stem;
       }
     }
 
-    re = /ll$/;
-    re2 = new RegExp(mgr1);
-    if (re.test(w) && re2.test(w)) {
-      re = /.$/;
-      w = w.replace(re, "");
+    fstPattern = /ll$/;
+    sndPattern = new RegExp(mGROne);
+    if (fstPattern.test(token) && sndPattern.test(token)) {
+      fstPattern = /.$/;
+      token = token.replace(fstPattern, "");
     }
 
-    if (firstch == "y") {
-      w = firstch.toLowerCase() + w.substr(1);
+    if (firstChar == "y") {
+      token = firstChar.toLowerCase() + token.substr(1);
     }
 
-    return w;
+    return token;
   };
 })();
 
