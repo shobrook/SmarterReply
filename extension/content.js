@@ -16,6 +16,8 @@ const injectJSPayload = (payload, args = "") => {
 const scraperPayload = () => {
   let currentURL = window.location.href;
 
+  // TODO: Setup a Mutation Observer to detect if Smart Replies are present
+
   setInterval(() => {
     let newURL = window.location.href;
 
@@ -74,7 +76,7 @@ const customSmartReplyPayload = smartReplies => {
     let emailContainer = document.getElementsByClassName(
       "Am Al editable LW-avf"
     )[0];
-    if (emailContainer !== "undefined" && emailContainer != null) {
+    if (emailContainer !== undefined && emailContainer != null) {
       emailContainer.innerText = email;
     } else {
       setTimeout(() => injectEmailIntoContainer(email), 200);
@@ -105,9 +107,6 @@ const customSmartReplyPayload = smartReplies => {
 
     return clonedNode;
   };
-
-  // TODO: In each smart reply's onClick handler, scrape email content and
-  // then send to content script
 
   // Creates smart reply HTML elements
   let hiddenSmartReplies = [];
@@ -187,10 +186,16 @@ const customSmartReplyPayload = smartReplies => {
             );
           }
 
-          event.target.innerHTML = `<span style='color: #767676;'><<</span>`; // this.innerHTML ?
+          event.target.innerHTML = `<span style='color: #767676;'><<</span>`;
           isExpanded = true;
         } else {
-          // TODO: Remove or hide all expanded smart replies
+          let smartReplyContainer = document.getElementsByClassName("brb")[0];
+          for (let idx in hiddenSmartReplies) {
+            smartReplyContainer.removeChild(hiddenSmartReplies[idx]);
+          }
+
+          event.target.innerHTML = `<span style='color: #767676;'>>></span>`;
+          isExpanded = false;
         }
       },
       true,
@@ -205,8 +210,6 @@ const customSmartReplyPayload = smartReplies => {
       let canvas = document.createElement("div");
       let createSmartReply = document.createElement("div");
 
-      // TODO: Clean this up by creating a "style" element and appending it to body
-
       canvas.style.backgroundColor = "rgba(0,0,0,.35)";
       canvas.style.zIndex = "2147483647";
       canvas.style.width = "100%";
@@ -216,11 +219,9 @@ const customSmartReplyPayload = smartReplies => {
       canvas.style.display = "block";
       canvas.style.position = "absolute";
 
-      // font-family: 'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif
-
       createSmartReply.style.position = "fixed";
       createSmartReply.style.width = "538px";
-      createSmartReply.style.height = "333px";
+      createSmartReply.style.height = "353px";
       createSmartReply.style.top = "50%";
       createSmartReply.style.left = "50%";
       createSmartReply.style.marginLeft = "-269px";
@@ -229,46 +230,107 @@ const customSmartReplyPayload = smartReplies => {
       createSmartReply.style.backgroundColor = "#FFFFFF";
       createSmartReply.style.zIndex = "2147483647";
 
-      let defaultTextCSS = `resize: none;\
-                        background-color: #edeff1;\
-                        border: none;\
-                        outline: none;\
-                        border-radius: 8px;\
-                        padding-left: 12px;\
-                        padding-top: 10px;\
-                        font-size: 16px;\
-                        font-family: sans-serif;\
-                        color: #202124;\
-                        width: 457px;\
-                        display: block;\
-                        margin-top: 20px;\
-                        margin-left: auto;\
-                        margin-right: auto;`;
-      let defaultButtonCSS = `border: none;\
-                              color: #fff;\
-                              font-family: sans-serif;\
-                              font-size: 14px;\
-                              position: relative;\
-                              height: 40px;\
-                              border-radius: 5px;\
-                              width: 225px;\
-                              cursor: pointer;\
-                              outline: none;`;
+      // TODO: Create examples
       let labelPlaceholder = "Title";
       let emailPlaceholder = "Your custom email response";
 
-      createSmartReply.innerHTML = `<div id="createSmartReplyHeader" style="color: #FFFFFF; padding-left: 35px; padding-right: 35px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; background-color: #d93025; position: relative; height: 42px; border-radius: 10px 10px 0px 0px;">
-                                      <span>Create a smart reply</span>
-                                      <a id="exitButton" style="font-weight: 100 !important; font-size: 24px; cursor: pointer;">×</a>
-                                    </div>
-                                    <div id="createSmartReplyBody">
-                                      <textarea id="replyTitle" autofocus required placeholder="${labelPlaceholder}" style="${defaultTextCSS} height: 26px; white-space: nowrap;"></textarea>
-                                      <textarea id="replyContent" placeholder="${emailPlaceholder}" style="${defaultTextCSS} height: 120px;"></textarea>
-                                    </div>
-                                    <div id="createButtons" style="margin-top: 20px; padding-left: 35px; padding-right: 35px; display: flex; align-items: center; justify-content: space-between;">
-                                      <button id="createReplyButton" style="${defaultButtonCSS} background-color: #d92f25;">Create</button>
-                                      <button id="cancelButton" style="${defaultButtonCSS} background-color: #9a9a9a;">Cancel</button>
-                                    </div>`;
+      createSmartReply.innerHTML = `\
+        <div id="createSmartReplyHeader">
+          <span>Create a smart reply</span>
+          <a id="exitButton">×</a>
+        </div>
+        <div id="createSmartReplyBody">
+          <textarea class="inputTextArea" id="replyTitle" autofocus required placeholder="${labelPlaceholder}"></textarea>
+          <textarea class="inputTextArea" id="replyContent" placeholder="${emailPlaceholder}"></textarea>
+        </div>
+        <div id="createButtons">
+          <button class="smartButtons" id="createReplyButton">Create</button>
+          <button class="smartButtons" id="cancelButton">Cancel</button>
+        </div>`;
+
+      // TODO: Create logo and add to header
+      document.getElementsByTagName("style")[0].innerHTML = `\
+        #createSmartReplyHeader {
+          color: #FFFFFF;
+          padding-left: 35px;
+          padding-right: 35px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background-color: #d93025;
+          position: relative;
+          height: 42px;
+          border-radius: 10px 10px 0px 0px;
+        }
+
+        #exitButton {
+          font-weight: 100 !important;
+          font-size: 24px;
+          cursor: pointer;
+        }
+
+        .inputTextArea {
+          resize: none;
+          background-color: #edeff1;
+          border: none;
+          outline: none;
+          border-radius: 6px;
+          padding-left: 12px;
+          padding-top: 10px;
+          font-size: 14px;
+          font-family: sans-serif;
+          color: #202124;
+          width: 457px;
+          display: block;
+          margin-top: 20px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        #replyTitle {
+          height: 26px;
+          white-space: nowrap;
+        }
+
+        #replyContent {
+          height: 140px;
+        }
+
+        #createButtons {
+          margin-top: 20px;
+          padding-left: 35px;
+          padding-right: 35px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .smartButtons {
+          border: none;
+          color: #fff;
+          font-family: sans-serif;
+          font-size: 14px;
+          position: relative;
+          height: 40px;
+          border-radius: 6px;
+          width: 225px;
+          cursor: pointer;
+          outline: none;
+          opacity: 1.0;
+        }
+
+        .smartButtons:hover {
+          opacity: 0.75;
+        }
+
+        #createReplyButton {
+          background-color: #d92f25
+        }
+
+        #cancelButton {
+          background-color: #9a9a9a;
+        }`;
 
       document.body.appendChild(canvas);
       document.body.appendChild(createSmartReply);
@@ -373,6 +435,11 @@ window.addEventListener("message", event => {
     let updatedSmartReplies =
       event.data.value.oldSmartReplies +
       [{ label: event.data.value.label, email: event.data.value.email }];
+
+    console.log("Updated smartReplies:");
+    console.log(JSON.stringify(updatedSmartReplies[0]));
+    console.log("");
+
     injectJSPayload(customSmartReplyPayload, updatedSmartReplies);
   } else if (event.data.title === "clickedSmartReply") {
     port.postMessage({
