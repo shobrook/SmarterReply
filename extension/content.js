@@ -432,13 +432,9 @@ window.addEventListener("message", event => {
       email: event.data.value.email
     });
 
-    let updatedSmartReplies =
-      event.data.value.oldSmartReplies +
-      [{ label: event.data.value.label, email: event.data.value.email }];
-
-    console.log("Updated smartReplies:");
-    console.log(JSON.stringify(updatedSmartReplies[0]));
-    console.log("");
+    let updatedSmartReplies = event.data.value.oldSmartReplies.concat([
+      { label: event.data.value.label, email: event.data.value.email }
+    ]);
 
     injectJSPayload(customSmartReplyPayload, updatedSmartReplies);
   } else if (event.data.title === "clickedSmartReply") {
