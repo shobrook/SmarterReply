@@ -108,9 +108,6 @@ const customSmartReplyPayload = smartReplies => {
     return clonedNode;
   };
 
-  console.log("THIS IS IT");
-  console.log(smartReplies);
-
   // Creates smart reply HTML elements
   let hiddenSmartReplies = [];
   for (let idx in smartReplies) {
