@@ -108,6 +108,9 @@ const customSmartReplyPayload = smartReplies => {
     return clonedNode;
   };
 
+  console.log("THIS IS IT");
+  console.log(smartReplies);
+
   // Creates smart reply HTML elements
   let hiddenSmartReplies = [];
   for (let idx in smartReplies) {
@@ -121,9 +124,9 @@ const customSmartReplyPayload = smartReplies => {
                               color: ${color};`;
 
     let textColor = "";
-    if (idx === 0) {
+    if (idx == 0) {
       textColor = "#EA526F"; // Red
-    } else if (idx === 1) {
+    } else if (idx == 1) {
       textColor = "#35AC1A"; // Green
     } else {
       textColor = "#767676"; // Grey
@@ -156,7 +159,9 @@ const customSmartReplyPayload = smartReplies => {
       // Collapsed Smart Replies
       hiddenSmartReplies.push(
         createNewSmartElement(
-          `<div style='${createCSS(textColor)}'></div><span>${label}</span>`,
+          `<div style='${createCSS(
+            textColor
+          )}'></div><span style='color: ${textColor};'>${label}</span>`,
           smartReplyOnClickHandler,
           false,
           false
@@ -164,7 +169,9 @@ const customSmartReplyPayload = smartReplies => {
       );
     } else {
       createNewSmartElement(
-        `<div style='${createCSS(textColor)}'></div><span>${label}</span>`,
+        `<div style='${createCSS(
+          textColor
+        )}'></div><span style='color: ${textColor};'>${label}</span>`,
         smartReplyOnClickHandler
       );
     }
