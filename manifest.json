@@ -11,6 +11,7 @@
     "tabs",
     "webNavigation"
   ],
+  "web_accessible_resources": ["assets/stopwords.json"],
   "browser_action": {
     "default_title": "Smart(er) Reply",
     "default_icon": "assets/icon.png",
