@@ -2,10 +2,8 @@
  * TEXT PREPROCESSING UTILITIES *
  ********************************/
 
-const STOPWORDS = []; // TODO: Fill this, or read from a JSON file
-
-// Porter Stemmer algorithm in pure JS
-// Taken from: https://tartarus.org/martin/PorterStemmer/js.txt
+// Porter Stemmer algorithm in pure JS, taken from:
+// https://tartarus.org/martin/PorterStemmer/js.txt
 const PorterStemmer = (() => {
   const stepTwoList = {
     ational: "ate",
@@ -213,16 +211,16 @@ const PorterStemmer = (() => {
   };
 })();
 
-const preprocessText = text => {
+const preprocessText = async text => {
   text = text.replace(/^\s+|\s+$/g, ""); // Strips newlines and extra whitespace
   text = text.replace(/<\/?[^>]+(>|$)/g, ""); // Removes HTML tags
   text = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""); // Punctuation removal
   text = text.toUpperCase(); // Uniform capitalization
 
   // Stopword removal
-  let tokens = text.split(" ").filter(token => {
-    return STOPWORDS.indexOf(token) < 0;
-  });
+  let resp = await fetch(chrome.extension.getURL("../assets/stopwords.json"));
+  let stopwords = (await resp.json()).map(stopword => stopword.toUpperCase());
+  let tokens = text.split(" ").filter(token => stopwords.indexOf(token) < 0);
 
   // Stemming
   tokens = tokens.map(token => {
@@ -274,10 +272,6 @@ const dotProduct = (u, v) => {
 };
 
 const cosineSim = (u, v) => {
-  console.log(u);
-  console.log(v);
-  console.log("");
-
   console.assert(u.length === v.length);
 
   let uNorm = 0,
