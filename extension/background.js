@@ -297,7 +297,6 @@ chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
 
       chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
         if (response && response.pong) {
-          console.log("Sending injectScraper event to content script."); // TEMP
           // Content script is ready
           chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
         } else {
