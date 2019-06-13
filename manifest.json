@@ -1,5 +1,5 @@
 {
-  "name": "Smart(er) Reply for Gmail",
+  "name": "Smarter Reply for Gmail",
   "description": "Create custom email responses for Gmail Smart Reply.",
   "version": "0.0.1",
   "manifest_version": 2,
@@ -13,9 +13,8 @@
   ],
   "web_accessible_resources": ["assets/stopwords.json"],
   "browser_action": {
-    "default_title": "Smart(er) Reply",
-    "default_icon": "assets/icon.png",
-    "default_popup": "extension/popup/index.html"
+    "default_title": "Smarter Reply for Gmail",
+    "default_icon": "assets/icon.png"
   },
   "background": { "scripts": ["extension/background.js"] },
   "content_scripts": [
