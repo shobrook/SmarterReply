@@ -284,35 +284,58 @@ const cosineSim = (u, v) => {
   return dotProduct(u, v) / (uNorm * vNorm);
 };
 
+/*********
+ * HELPERS
+ *********/
+
+ const isEmailURL = (url) => {
+   if (url.includes("mail.google.com")) {
+     if (!url.includes("#")) {
+       return false;
+     }
+
+     // if there's a '/' after the '#', then an email is opened
+     let hashIndex = url.indexOf("#");
+     // first, get the part of the url after the #
+     let urlAfterHash = url.slice(hashIndex, url.length);
+     // if this part includes a /, then an email is open
+     if (urlAfterHash.includes("/")) {
+       return true;
+     }
+   }
+
+   return false;
+ }
+
 /*******************
  * MESSAGE PASSING *
  *******************/
 
 // Tells content script to inject the JS payload for scraping emails
 chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
-  if (changeInfo.status == "complete" && tab.url.includes("mail.google.com")) {
-    // Sends a message to content scripts running in the current tab
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      let activeTabID = tabs[0].id;
+  if (changeInfo.status == "complete" && isEmailURL(tab.url)) {
+      // Sends a message to content scripts running in the current tab
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        let activeTabID = tabs[0].id;
 
-      chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
-        if (response && response.pong) {
-          // Content script is ready
-          chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
-        } else {
-          // No listener on the other end
-          chrome.tabs.executeScript(activeTabID, { file: "content.js" }, () => {
-            if (chrome.runtime.lastError) {
-              throw Error("Unable to inject script into tab " + activeTabID);
-            }
-
-            // OK, now it's injected and ready
+        chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
+          if (response && response.pong) {
+            // Content script is ready
             chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
-          });
-        }
+          } else {
+            // No listener on the other end
+            chrome.tabs.executeScript(activeTabID, { file: "content.js" }, () => {
+              if (chrome.runtime.lastError) {
+                throw Error("Unable to inject script into tab " + activeTabID);
+              }
+
+              // OK, now it's injected and ready
+              chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
+            });
+          }
+        });
       });
-    });
-  }
+    }
 });
 
 // Listens for incoming messages from the content scripts
