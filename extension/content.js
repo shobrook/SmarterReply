@@ -14,49 +14,30 @@ const injectJSPayload = (payload, args = "") => {
  ************/
 
 const scraperPayload = () => {
-  let currentURL = window.location.href;
+  let smartReplies = Array.from(document.getElementsByClassName("bra"));
 
-  // TODO: Setup a Mutation Observer to detect if Smart Replies are present
+  // Smart Reply elements are present
+  if (typeof smartReplies !== "undefined" && smartReplies.length > 0) {
+    let receivedEmailAuthor = document.getElementsByClassName("gD")[0];
+    let receivedEmailSubject = document.getElementsByClassName("hP")[0];
+    let receivedEmail = document.getElementsByClassName("a3s aiL ")[0];
 
-  setInterval(() => {
-    let newURL = window.location.href;
-
-    if (currentURL != newURL) {
-      // URL change
-      currentURL = newURL;
-
-      let subdomain = newURL.split("mail.google.com/mail/u/0/#")[1];
-      let emailHash = subdomain.split("/")[1];
-
-      // An email is open
-      if (emailHash) {
-        let smartReplies = Array.from(document.getElementsByClassName("bra"));
-
-        // Smart Reply elements are present
-        if (typeof smartReplies !== "undefined" && smartReplies.length > 0) {
-          let receivedEmailAuthor = document.getElementsByClassName("go")[0];
-          let receivedEmailSubject = document.getElementsByClassName("hP")[0];
-          let receivedEmail = document.getElementsByClassName("a3s aXjCH ")[0];
-
-          // Send scraped email content to the content script
-          window.postMessage(
-            {
-              title: "scrapedEmailContent",
-              value: {
-                author: receivedEmailAuthor.innerText
-                  .replace("<", "")
-                  .replace(">", ""),
-                subject: receivedEmailSubject.innerText,
-                email: receivedEmail.innerText
-                // smartReplies: smartReplies.map(reply => reply.innerText)
-              }
-            },
-            "*"
-          );
+    // Send scraped email content to the content script
+    window.postMessage(
+      {
+        title: "scrapedEmailContent",
+        value: {
+          author: receivedEmailAuthor.innerText
+            .replace("<", "")
+            .replace(">", ""),
+          subject: receivedEmailSubject.innerText,
+          email: receivedEmail.innerText
+          // smartReplies: smartReplies.map(reply => reply.innerText)
         }
-      }
-    }
-  }, 500);
+      },
+      "*"
+    );
+  }
 };
 
 const customSmartReplyPayload = smartReplies => {
@@ -130,9 +111,9 @@ const customSmartReplyPayload = smartReplies => {
     }
 
     let smartReplyOnClickHandler = () => {
-      let receivedAuthor = document.getElementsByClassName("go")[0];
+      let receivedAuthor = document.getElementsByClassName("gD")[0];
       let receivedSubject = document.getElementsByClassName("hP")[0];
-      let receivedEmail = document.getElementsByClassName("a3s aXjCH ")[0];
+      let receivedEmail = document.getElementsByClassName("a3s aiL ")[0];
 
       window.postMessage(
         {
@@ -414,6 +395,7 @@ const port = chrome.runtime.connect(
 
 port.onMessage.addListener(msg => {
   if (msg.title === "injectSmartReplies") {
+    console.log("Injecting smart reply payload."); // TEMP
     injectJSPayload(customSmartReplyPayload, msg.smartReplies);
   }
 });
