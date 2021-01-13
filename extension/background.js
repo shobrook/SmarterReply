@@ -352,6 +352,7 @@ chrome.runtime.onConnect.addListener(port => {
       let emailFreqMap = createFrequencyMap(msg.email);
       // let neighboringSmartReplies = msg.smartReplies;
 
+      console.log("Gets here at least");
       storage.get(null, smartReplies => {
         if (!("tokenToIdxMap" in smartReplies)) {
           storage.set({ tokenToIdxMap: {} }, () => {});
@@ -372,7 +373,6 @@ chrome.runtime.onConnect.addListener(port => {
           if (replyLabel !== "tokenToIdxMap") {
             let subjectVecs = content.subjectVecs;
             let emailVecs = content.emailVecs;
-
             if (emailVecs === undefined || emailVecs.length === 0) {
               rankedSmartReplies.push({
                 label: replyLabel,
@@ -407,6 +407,7 @@ chrome.runtime.onConnect.addListener(port => {
           }
         });
 
+        console.log("HIT TSI");
         port.postMessage({
           title: "injectSmartReplies",
           smartReplies: rankedSmartReplies.sort(
