@@ -388,14 +388,14 @@ const customSmartReplyPayload = smartReplies => {
         smartReply.removeAttribute("data-action-index");
         smartReply.onclick = () => {
           if (smartReply.selected === "false") {
-            smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF"; // white
-            smartReply.style.backgroundColor = "#EA526F"; // red
+            smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
+            smartReply.style.backgroundColor = "#EA526F";
             smartReply.selected = "true";
             smartRepliesToBeDeleted.push(smartReply);
             console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
           } else {
-            smartReply.getElementsByTagName("span")[0].style.color = "#767676"; // dark gwey
-            smartReply.style.backgroundColor = "#DADCE0"; // grey
+            smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+            smartReply.style.backgroundColor = "#DADCE0";
             smartReply.selected = "false";
             let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
             smartRepliesToBeDeleted.splice(indexOfSR, 1);
