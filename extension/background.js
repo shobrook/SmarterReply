@@ -372,6 +372,7 @@ chrome.runtime.onConnect.addListener(port => {
           if (replyLabel !== "tokenToIdxMap") {
             let subjectVecs = content.subjectVecs;
             let emailVecs = content.emailVecs;
+
             if (emailVecs === undefined || emailVecs.length === 0) {
               rankedSmartReplies.push({
                 label: replyLabel,
