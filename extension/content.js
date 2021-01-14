@@ -358,12 +358,13 @@ const customSmartReplyPayload = smartReplies => {
     true
   );
 
+  var smartRepliesToBeDeleted = [];
+
   // Creates a "New Custom Smart Reply" button
   createNewSmartElement(
     `<b style='color: #767676;'>-</b>`,
-    () => {
+    e => {
       let smartReplies = document.getElementsByClassName("customReply")
-      var smartRepliesToBeDeleted = [];
       for (let i in smartReplies) {
         // 1. Change the color of all present smart replies to indicate that they're
         // selectable
@@ -393,19 +394,26 @@ const customSmartReplyPayload = smartReplies => {
             smartRepliesToBeDeleted.push(smartReply);
             console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
           } else {
-            smartReply.getElementsByTagName("span")[0].style.color = "#767676"; // dark grewy
+            smartReply.getElementsByTagName("span")[0].style.color = "#767676"; // dark gwey
             smartReply.style.backgroundColor = "#DADCE0"; // grey
             smartReply.selected = "false";
             let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
             smartRepliesToBeDeleted.splice(indexOfSR, 1);
             console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
           }
+
+          if (smartRepliesToBeDeleted.length > 0) {
+            e.target.style.backgroundColor = "#EA526F";
+            let innerText = e.target.getElementsByTagName("b")[0];
+            innerText.style.color = "#FFFFFF";
+          } else {
+            e.target.style.backgroundColor = "#DADCE0";
+            let innerText = e.target.getElementsByTagName("b")[0];
+            innerText.style.color = "#767676";
+          }
         }
       }
 
-      // 2. Change the onClick handlers for all the smart replies to do the following:
-        // 2.1 Add the smart reply to a smartRepliesToBeDeleted list
-        // 2.2 Change the color of the smart reply to indicate that it's selected
 
       // 3. When at least one smart reply is selected, change the - button to say "done"
 
