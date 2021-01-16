@@ -80,7 +80,8 @@ const customSmartReplyPayload = smartReplies => {
     if (overwriteClickHandler) {
       clonedNode.removeAttribute("data-action-index");
     }
-    clonedNode.addEventListener("click", onClick, false);
+    clonedNode.onclick = onClick;
+    // clonedNode.addEventListener("click", onClick, false);
 
     if (appendToContainer) {
       smartRepliesContainer.appendChild(clonedNode);
@@ -90,25 +91,12 @@ const customSmartReplyPayload = smartReplies => {
   };
 
   // Creates smart reply HTML elements
+  let allSmartReplies = [];
   let hiddenSmartReplies = [];
   for (let idx in smartReplies) {
     let label = smartReplies[idx].label,
       email = smartReplies[idx].email;
-    let createCSS = color => `height: 8px;\
-                              width: 8px;\
-                              border-radius: 50%;\
-                              margin-right: 8px;\
-                              background-color: ${color};\
-                              color: ${color};`;
-
-    let textColor = "";
-    if (idx == 0) {
-      textColor = "#EA526F"; // Red
-    } else if (idx == 1) {
-      textColor = "#35AC1A"; // Green
-    } else {
-      textColor = "#767676"; // Grey
-    }
+    let textColor = "#35AC1A";
 
     let smartReplyOnClickHandler = () => {
       let receivedAuthor = document.getElementsByClassName("gD")[0];
@@ -133,29 +121,29 @@ const customSmartReplyPayload = smartReplies => {
       injectEmailIntoContainer(email);
     };
 
+    let smartReplyButton;
     if (idx > 1) {
       // Collapsed Smart Replies
-      hiddenSmartReplies.push(
-        createNewSmartElement(
-          `<div style='${createCSS(
-            textColor
-          )}'></div><span style='color: ${textColor};'>${label}</span>`,
-          smartReplyOnClickHandler,
-          false,
-          false
-        )
+      // creates the smart replies - if there's more than 2 then create hidden smart reply
+      smartReplyButton = createNewSmartElement(
+        `<span style='color: ${textColor};'>${label}</span>`,
+        smartReplyOnClickHandler,
+        false,
+        false
       );
+      hiddenSmartReplies.push(smartReplyButton);
     } else {
-      createNewSmartElement(
-        `<div style='${createCSS(
-          textColor
-        )}'></div><span style='color: ${textColor};'>${label}</span>`,
+      // if there's two or less, then it just creates more smart replies
+      smartReplyButton = createNewSmartElement(
+        `<span style='color: ${textColor};'>${label}</span>`,
         smartReplyOnClickHandler
       );
     }
+    allSmartReplies.push(smartReplyButton);
   }
 
   if (hiddenSmartReplies !== undefined && hiddenSmartReplies.length > 0) {
+    // the button that shows/hides smart replies
     var isExpanded = false;
     createNewSmartElement(
       `<span style='color: #767676;'>>></span>`,
@@ -369,6 +357,74 @@ const customSmartReplyPayload = smartReplies => {
     },
     true
   );
+
+  var smartRepliesToBeDeleted = [];
+
+  // Creates a "New Custom Smart Reply" button
+  createNewSmartElement(
+    `<b style='color: #767676;'>-</b>`,
+    e => {
+      let smartReplies = document.getElementsByClassName("customReply")
+      for (let i in smartReplies) {
+        // 1. Change the color of all present smart replies to indicate that they're
+        // selectable
+        let smartReply = smartReplies[i];
+        smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+        smartReply.style.backgroundColor = "#DADCE0";
+
+        smartReply.selected = "false";
+
+        smartReply.onmouseover = () => {
+          smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
+          smartReply.style.backgroundColor = "#EA526F";
+        }
+        smartReply.onmouseout = () => {
+          if (smartReply.selected === "false") { // Smart reply isn't already selected
+            smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+            smartReply.style.backgroundColor = "#DADCE0";
+          }
+        }
+
+        smartReply.removeAttribute("data-action-index");
+        smartReply.onclick = () => {
+          if (smartReply.selected === "false") {
+            smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
+            smartReply.style.backgroundColor = "#EA526F";
+            smartReply.selected = "true";
+            smartRepliesToBeDeleted.push(smartReply);
+            console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
+          } else {
+            smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+            smartReply.style.backgroundColor = "#DADCE0";
+            smartReply.selected = "false";
+            let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
+            smartRepliesToBeDeleted.splice(indexOfSR, 1);
+            console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
+          }
+
+          if (smartRepliesToBeDeleted.length > 0) {
+            e.target.style.backgroundColor = "#EA526F";
+            let innerText = e.target.getElementsByTagName("b")[0];
+            innerText.style.color = "#FFFFFF";
+          } else {
+            e.target.style.backgroundColor = "#DADCE0";
+            let innerText = e.target.getElementsByTagName("b")[0];
+            innerText.style.color = "#767676";
+          }
+        }
+      }
+
+
+      // 3. When at least one smart reply is selected, change the - button to say "done"
+
+      // 4. When the minus/done button is clicked again, remove the smart replies from
+      // the frontend and tell the background script to delete them from the chrome storage
+
+      // 5. Then change back the - button to its original state (from "Done" to "-")
+    }
+  );
+
+
 };
 
 /*******************
