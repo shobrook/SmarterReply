@@ -64,17 +64,27 @@ const customSmartReplyPayload = smartReplies => {
     }
   };
 
+  var uniqueSmartReplyId = 0;
+
   const createNewSmartElement = (
     html,
     onClick,
     overwriteClickHandler = false,
-    appendToContainer = true
+    appendToContainer = true,
+    isSmartReply = true
   ) => {
     let smartRepliesContainer = document.getElementsByClassName("brb")[0];
-    let clonedNode = smartRepliesContainer.lastChild.cloneNode(true);
+    let clonedNode = smartRepliesContainer.firstChild.cloneNode(true);
     clonedNodeClass = clonedNode.getAttribute("class");
 
-    clonedNode.setAttribute("class", clonedNodeClass + " customReply");
+    if (isSmartReply) {
+      uniqueSmartReplyId += 1;
+      clonedNode.setAttribute("class", clonedNodeClass + " customReply");
+      clonedNode.setAttribute("id", `smartReply_${uniqueSmartReplyId}`);
+    } else {
+      clonedNode.setAttribute("class", clonedNodeClass + " customButton");
+    }
+
     clonedNode.innerHTML = html;
 
     if (overwriteClickHandler) {
@@ -172,7 +182,8 @@ const customSmartReplyPayload = smartReplies => {
         }
       },
       true,
-      true
+      true,
+      false
     );
   }
 
@@ -355,73 +366,101 @@ const customSmartReplyPayload = smartReplies => {
         false
       );
     },
-    true
+    true,
+    {isSmartReply: false}
   );
 
   var smartRepliesToBeDeleted = [];
+  var isMinusButtonActive = false;
 
   // Creates a "New Custom Smart Reply" button
   createNewSmartElement(
     `<b style='color: #767676;'>-</b>`,
     e => {
-      let smartReplies = document.getElementsByClassName("customReply")
-      for (let i in smartReplies) {
-        // 1. Change the color of all present smart replies to indicate that they're
-        // selectable
-        let smartReply = smartReplies[i];
-        smartReply.getElementsByTagName("span")[0].style.color = "#767676";
-        smartReply.style.backgroundColor = "#DADCE0";
+      if (isMinusButtonActive) {
+        // Stuff here handles what happens when minus button is deactivated
+        isMinusButtonActive = false;
 
-        smartReply.selected = "false";
-
-        smartReply.onmouseover = () => {
-          smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
-          smartReply.style.backgroundColor = "#EA526F";
+        for (let index in smartRepliesToBeDeleted) {
+          let smartReplyID = smartRepliesToBeDeleted[index];
+          let smartReply = document.getElementById(smartReplyID)
+          smartReply.remove();
         }
-        smartReply.onmouseout = () => {
-          if (smartReply.selected === "false") { // Smart reply isn't already selected
-            smartReply.getElementsByTagName("span")[0].style.color = "#767676";
-            smartReply.style.backgroundColor = "#DADCE0";
-          }
-        }
+        smartRepliesToBeDeleted = [];
 
-        smartReply.removeAttribute("data-action-index");
-        smartReply.onclick = () => {
-          if (smartReply.selected === "false") {
+          // remove them from chrome cache
+        // return buttons to their original state (on the frontend)
+        // return smart replies to their original behavior
+          // onmouseover
+          // onclick
+
+
+      } else {
+        isMinusButtonActive = true;
+
+        let smartReplies = document.getElementsByClassName("customReply")
+        for (let i in smartReplies) {
+          // 1. Change the color of all present smart replies to indicate that they're
+          // selectable
+          let smartReply = smartReplies[i];
+          smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+          smartReply.style.backgroundColor = "#DADCE0";
+
+          smartReply.selected = "false";
+
+          smartReply.onmouseover = () => {
             smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
             smartReply.style.backgroundColor = "#EA526F";
-            smartReply.selected = "true";
-            smartRepliesToBeDeleted.push(smartReply);
-            console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
-          } else {
-            smartReply.getElementsByTagName("span")[0].style.color = "#767676";
-            smartReply.style.backgroundColor = "#DADCE0";
-            smartReply.selected = "false";
-            let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
-            smartRepliesToBeDeleted.splice(indexOfSR, 1);
-            console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
+          }
+          smartReply.onmouseout = () => {
+            if (smartReply.selected === "false") { // Smart reply isn't already selected
+              smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+              smartReply.style.backgroundColor = "#DADCE0";
+            }
           }
 
-          if (smartRepliesToBeDeleted.length > 0) {
-            e.target.style.backgroundColor = "#EA526F";
-            let innerText = e.target.getElementsByTagName("b")[0];
-            innerText.style.color = "#FFFFFF";
-          } else {
-            e.target.style.backgroundColor = "#DADCE0";
-            let innerText = e.target.getElementsByTagName("b")[0];
-            innerText.style.color = "#767676";
+          smartReply.removeAttribute("data-action-index");
+          smartReply.onclick = () => {
+            if (smartReply.selected === "false") {
+              smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
+              smartReply.style.backgroundColor = "#EA526F";
+              smartReply.selected = "true";
+              smartRepliesToBeDeleted.push(smartReply.id);
+              console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
+            } else {
+              smartReply.getElementsByTagName("span")[0].style.color = "#767676";
+              smartReply.style.backgroundColor = "#DADCE0";
+              smartReply.selected = "false";
+              let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply.id);
+              smartRepliesToBeDeleted.splice(indexOfSR, 1);
+              console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
+            }
+
+            if (smartRepliesToBeDeleted.length > 0) {
+              e.target.style.backgroundColor = "#EA526F";
+              let innerText = e.target.getElementsByTagName("b")[0];
+              innerText.style.color = "#FFFFFF";
+            } else {
+              e.target.style.backgroundColor = "#DADCE0";
+              let innerText = e.target.getElementsByTagName("b")[0];
+              innerText.style.color = "#767676";
+            }
           }
         }
       }
 
 
-      // 3. When at least one smart reply is selected, change the - button to say "done"
 
       // 4. When the minus/done button is clicked again, remove the smart replies from
       // the frontend and tell the background script to delete them from the chrome storage
 
+      // when smart replies have been selected to be Deleted
+
+      // when no smart replies have been selected and want to exit "delete" mode
+
       // 5. Then change back the - button to its original state (from "Done" to "-")
-    }
+    },
+    {isSmartReply: false}
   );
 
 
