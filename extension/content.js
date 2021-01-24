@@ -44,14 +44,18 @@ const customSmartReplyPayload = smartReplies => {
   let defaultReplyClass = document
     .getElementsByClassName("brb")[0]
     .firstChild.getAttribute("class");
-  let customReplies = Array.from(
-    document.getElementsByClassName(defaultReplyClass + " customReply")
-  );
 
-  // Delete any existing custom Smart Replies
-  for (let idx in customReplies) {
-    document.getElementsByClassName("brb")[0].removeChild(customReplies[idx]);
+  const preventDuplicateButtons = buttonClass => {
+    let buttonElements = Array.from(
+      document.getElementsByClassName(`${defaultReplyClass} ${buttonClass}`)
+    );
+    for (let index in buttonElements) {
+      document.getElementsByClassName("brb")[0].removeChild(buttonElements[index]);
+    }
   }
+
+  preventDuplicateButtons("customReply");
+  preventDuplicateButtons("customButton");
 
   const injectEmailIntoContainer = email => {
     let emailContainer = document.getElementsByClassName(
@@ -69,15 +73,17 @@ const customSmartReplyPayload = smartReplies => {
   const createNewSmartElement = (
     html,
     onClick,
-    overwriteClickHandler = false,
-    appendToContainer = true,
-    isSmartReply = true
+    options = {
+      overwriteClickHandler: false,
+      appendToContainer: true,
+      isSmartReply: true
+    }
   ) => {
     let smartRepliesContainer = document.getElementsByClassName("brb")[0];
     let clonedNode = smartRepliesContainer.firstChild.cloneNode(true);
     clonedNodeClass = clonedNode.getAttribute("class");
 
-    if (isSmartReply) {
+    if (options.isSmartReply) {
       uniqueSmartReplyId += 1;
       clonedNode.setAttribute("class", clonedNodeClass + " customReply");
       clonedNode.setAttribute("id", `smartReply_${uniqueSmartReplyId}`);
@@ -87,13 +93,13 @@ const customSmartReplyPayload = smartReplies => {
 
     clonedNode.innerHTML = html;
 
-    if (overwriteClickHandler) {
+    if (options.overwriteClickHandler) {
       clonedNode.removeAttribute("data-action-index");
     }
     clonedNode.onclick = onClick;
     // clonedNode.addEventListener("click", onClick, false);
 
-    if (appendToContainer) {
+    if (options.appendToContainer) {
       smartRepliesContainer.appendChild(clonedNode);
     }
 
@@ -138,8 +144,11 @@ const customSmartReplyPayload = smartReplies => {
       smartReplyButton = createNewSmartElement(
         `<span style='color: ${textColor};'>${label}</span>`,
         smartReplyOnClickHandler,
-        false,
-        false
+        {
+          overwriteClickHandler: false,
+          appendToContainer: false,
+          isSmartReply: true
+        }
       );
       hiddenSmartReplies.push(smartReplyButton);
     } else {
@@ -181,9 +190,7 @@ const customSmartReplyPayload = smartReplies => {
           isExpanded = false;
         }
       },
-      true,
-      true,
-      false
+      {overwriteClickHandler: true, appendToContainer: true, isSmartReply: false}
     );
   }
 
@@ -366,8 +373,11 @@ const customSmartReplyPayload = smartReplies => {
         false
       );
     },
-    true,
-    {isSmartReply: false}
+    {
+      overwriteClickHandler: true,
+      appendToContainer: true,
+      isSmartReply: false
+    }
   );
 
   var smartRepliesToBeDeleted = [];
@@ -381,12 +391,22 @@ const customSmartReplyPayload = smartReplies => {
         // Stuff here handles what happens when minus button is deactivated
         isMinusButtonActive = false;
 
+        let titlesOfSmartRepliesToBeDeleted = smartRepliesToBeDeleted.map(smartReply =>
+          smartReply.getElementsByTagName("span")[0].innerText
+        );
         for (let index in smartRepliesToBeDeleted) {
-          let smartReplyID = smartRepliesToBeDeleted[index];
+          let smartReplyID = smartRepliesToBeDeleted[index].id;
           let smartReply = document.getElementById(smartReplyID)
           smartReply.remove();
         }
         smartRepliesToBeDeleted = [];
+
+        // window.postMessage({
+        //   title: "deleteSmartReplies",
+        //   value: {
+        //     smartReplyTitles: titlesOfSmartRepliesToBeDeleted
+        //   }
+        // });
 
           // remove them from chrome cache
         // return buttons to their original state (on the frontend)
@@ -398,7 +418,7 @@ const customSmartReplyPayload = smartReplies => {
       } else {
         isMinusButtonActive = true;
 
-        let smartReplies = document.getElementsByClassName("customReply")
+        let smartReplies = Array.from(document.getElementsByClassName("customReply"));
         for (let i in smartReplies) {
           // 1. Change the color of all present smart replies to indicate that they're
           // selectable
@@ -425,16 +445,19 @@ const customSmartReplyPayload = smartReplies => {
               smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
               smartReply.style.backgroundColor = "#EA526F";
               smartReply.selected = "true";
-              smartRepliesToBeDeleted.push(smartReply.id);
+              smartRepliesToBeDeleted.push(smartReply);
               console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
             } else {
               smartReply.getElementsByTagName("span")[0].style.color = "#767676";
               smartReply.style.backgroundColor = "#DADCE0";
               smartReply.selected = "false";
-              let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply.id);
+              let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
               smartRepliesToBeDeleted.splice(indexOfSR, 1);
               console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
             }
+
+            console.log("this:");
+            console.log(e.target);
 
             if (smartRepliesToBeDeleted.length > 0) {
               e.target.style.backgroundColor = "#EA526F";
@@ -460,7 +483,11 @@ const customSmartReplyPayload = smartReplies => {
 
       // 5. Then change back the - button to its original state (from "Done" to "-")
     },
-    {isSmartReply: false}
+    {
+      overwriteClickHandler: true, // false
+      appendToContainer: true,
+      isSmartReply: false
+    }
   );
 
 
