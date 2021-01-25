@@ -401,31 +401,18 @@ const customSmartReplyPayload = smartReplies => {
         }
         smartRepliesToBeDeleted = [];
 
-        // window.postMessage({
-        //   title: "deleteSmartReplies",
-        //   value: {
-        //     smartReplyTitles: titlesOfSmartRepliesToBeDeleted
-        //   }
-        // });
-
-        // remove them from chrome cache
-        // return buttons to their original state (on the frontend)
-          // smartReplies
-          // go back to white backround and red text
-
-        // return smart replies to their original behavior
-          // onmouseover
-            // no more red highlighting
-          // onclick
-            // opens email with smartReply content
-
-
+        window.postMessage({
+          title: "deleteSmartReplies",
+          value: {
+            smartReplyTitles: titlesOfSmartRepliesToBeDeleted
+          }
+        });
       } else {
         isMinusButtonActive = true;
 
         let smartReplies = Array.from(document.getElementsByClassName("customReply"));
         for (let i in smartReplies) {
-          // 1. Change the color of all present smart replies to indicate that they're
+          // Change the color of all present smart replies to indicate that they're
           // selectable
           let smartReply = smartReplies[i];
           smartReply.getElementsByTagName("span")[0].style.color = "#767676";
@@ -483,20 +470,9 @@ const customSmartReplyPayload = smartReplies => {
           }
         }
       }
-
-
-
-      // 4. When the minus/done button is clicked again, remove the smart replies from
-      // the frontend and tell the background script to delete them from the chrome storage
-
-      // when smart replies have been selected to be Deleted
-
-      // when no smart replies have been selected and want to exit "delete" mode
-
-      // 5. Then change back the - button to its original state (from "Done" to "-")
     },
     {
-      overwriteClickHandler: true, // false
+      overwriteClickHandler: true,
       appendToContainer: true,
       isSmartReply: false
     }
@@ -566,6 +542,11 @@ window.addEventListener("message", event => {
         receivedSubject: event.data.value.receivedSubject,
         receivedEmail: event.data.value.receivedEmail
       }
+    });
+  } else if (event.data.title === "deleteSmartReplies") {
+    port.postMessage({
+      title: "deleteSmartReplies",
+      smartReplyTitles: event.data.value.smartReplyTitles
     });
   }
 });
