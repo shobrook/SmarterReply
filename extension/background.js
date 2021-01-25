@@ -311,12 +311,13 @@ const cosineSim = (u, v) => {
  * MESSAGE PASSING *
  *******************/
 
+var activeTabID;
 // Tells content script to inject the JS payload for scraping emails
 chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
   if (changeInfo.status == "complete" && isEmailURL(tab.url)) {
       // Sends a message to content scripts running in the current tab
       chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-        let activeTabID = tabs[0].id;
+        activeTabID = tabs[0].id;
 
         chrome.tabs.sendMessage(activeTabID, { ping: true }, response => {
           if (response && response.pong) {
@@ -507,6 +508,10 @@ chrome.runtime.onConnect.addListener(port => {
           storage.set(updatedSmartReplies, () => {});
         });
       });
+    } else if (msg.title === "deleteSmartReplies") {
+      // 1. Delete the smart replies from chrome cache
+      storage.remove(msg.smartReplyTitles);
+      chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
     }
   });
 });
