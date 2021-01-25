@@ -30,6 +30,12 @@ To delete a SmarterReply, click the "-" button, select the SmarterReply or Smart
 
 ![DeleteSmarterReply](https://user-images.githubusercontent.com/33335169/105694108-8bffc080-5ece-11eb-8a46-1af6c7bea98b.gif)
 
+### Not seeing Smart and Smarter Replies?
+Go to your Gmail settings and enable Smart Compose.
+
+<img width="589" alt="smart_compose_setting" src="https://user-images.githubusercontent.com/33335169/105696259-121d0680-5ed1-11eb-8a94-cd62e083c3f6.png">
+
+
 ## Contribute
 
 If you would like to contribute to SmarterReply, feel free to! Your contributions are not required (of course), but always appreciated. Take a look at our existing issues at https://github.com/shobrook/SmarterReply/issues. If there are other features you would like us to consider adding, let us know!
