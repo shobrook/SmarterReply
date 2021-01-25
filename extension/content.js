@@ -408,11 +408,16 @@ const customSmartReplyPayload = smartReplies => {
         //   }
         // });
 
-          // remove them from chrome cache
+        // remove them from chrome cache
         // return buttons to their original state (on the frontend)
+          // smartReplies
+          // go back to white backround and red text
+
         // return smart replies to their original behavior
           // onmouseover
+            // no more red highlighting
           // onclick
+            // opens email with smartReply content
 
 
       } else {
@@ -456,16 +461,23 @@ const customSmartReplyPayload = smartReplies => {
               console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
             }
 
-            console.log("this:");
-            console.log(e.target);
+            // depending on where the user selects the - button,
+            // e.target Changes
+            // the code below solves the style error that resulted from that
+            let element;
+            if (e.target.tagName == "B") {
+              element = e.target.parentNode;
+            } else if (e.target.tagName == "DIV") {
+              element = e.target;
+            }
 
             if (smartRepliesToBeDeleted.length > 0) {
-              e.target.style.backgroundColor = "#EA526F";
-              let innerText = e.target.getElementsByTagName("b")[0];
+              element.style.backgroundColor = "#EA526F";
+              let innerText = element.getElementsByTagName("b")[0];
               innerText.style.color = "#FFFFFF";
             } else {
-              e.target.style.backgroundColor = "#DADCE0";
-              let innerText = e.target.getElementsByTagName("b")[0];
+              element.style.backgroundColor = "#DADCE0";
+              let innerText = element.getElementsByTagName("b")[0];
               innerText.style.color = "#767676";
             }
           }
