@@ -50,6 +50,6 @@ Smarter Reply is written in pure Javascript and has no dependencies. The event l
 
 1. An opened email is scraped and preprocessed (stopword and punctuation removal, uniform capitalization, and stemming)
 2. For each Smarter Reply, a bag-of-words (BoW) model is fitted from the previous emails associated with that Smarter Reply
-3. The BoW model produces a vector for the input email, x_i, and each associated email, y_0, y_1, ..., y_n
-4. y_0, y_1, ..., y_n are summed to create y, a vector representing word frequencies across all associated emails
-5. Cosine similarity between x_i and y is calculated, and the Smarter Replies with the highest similarity measures are returned to the frontend
+3. The BoW model produces a vector for the input email, _x<sub>i</sub>_, and each associated email, _y<sub>0</sub>, y<sub>1</sub>, ..., y<sub>n</sub>_
+4. _y<sub>0</sub>, y<sub>1</sub>, ..., y<sub>n</sub>_ are summed to create _y_, a vector representing word frequencies across all associated emails
+5. Cosine similarity between _x<sub>i</sub>_ and _y_ is calculated, and the Smarter Replies with the highest similarity measures are returned to the frontend
