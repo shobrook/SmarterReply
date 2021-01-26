@@ -9,7 +9,7 @@ Gmail has a feature called "Smart Reply," where users can select from a list of 
 
 ## Installation
 
-You can download the extension on the [Chrome web store](). Or you can install the development version of the extension by cloning the repo, navigating to chrome://extensions/, selecting "Load Unpacked" in the top-left corner, and uploading the repo.
+You can download the extension on the [Chrome web store](). Or you can install the development version of the extension by cloning the repo, navigating to [chrome://extensions/](chrome://extensions/), selecting "Load Unpacked" in the top-left corner, and uploading the repo.
 
 ## Usage
 
@@ -27,13 +27,13 @@ To create a Smarter Reply, open an email that already has smart replies. Click t
 
 To use your Smarter Reply, simply click it as you would a regular smart reply. An email draft should be created and autofilled with your smart reply.
 
-![CreateSmarterReply](https://user-images.githubusercontent.com/33335169/105693494-ccab0a00-5ecd-11eb-9387-9383102b2c5b.gif)
+![use_smarter_reply](assets/use_smarter_reply.gif)
 
 ### 3. Deleting a Smarter Reply
 
 To delete a Smarter Reply, click the "-" button and then select the Smarter Reply(ies) that you would like to delete. Then click the "-" button again.
 
-![DeleteSmarterReply](https://user-images.githubusercontent.com/33335169/105694108-8bffc080-5ece-11eb-8a46-1af6c7bea98b.gif)
+![delete_smarter_reply](assets/delete_smarter_reply.gif)
 
 ## How it Works
 
