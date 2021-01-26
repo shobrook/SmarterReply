@@ -35,3 +35,21 @@ To use your Smarter Reply, simply click it as you would a regular smart reply. A
 To delete a Smarter Reply, click the "-" button and then select the Smarter Reply(ies) that you would like to delete. Then click the "-" button again.
 
 ![DeleteSmarterReply](https://user-images.githubusercontent.com/33335169/105694108-8bffc080-5ece-11eb-8a46-1af6c7bea98b.gif)
+
+## How it Works
+
+Smarter Reply is written in pure Javascript and has no dependencies. The event loop is pretty straightforward:
+
+1. Background script (`background.js`) detects when a user opens an email and sends a signal to the content script (`content.js`)
+2. Content script scrapes the email content and sends it back to the background script
+3. Background script searches the Chrome cache for the best matching Smarter Replies (\*) and sends them to the content script
+4. Content script injects JS into the Gmail frontend to render the Smarter Replies
+5. When a Smarter Reply is created, clicked, or deleted on the frontend, the content script sends a signal to the background to update the Chrome cache 
+
+\* Smarter Replies are recommended by a unigram model, which calculates the similarity of the received email to the set of emails associated with each Smart Reply. Here's how it works:
+
+1. An opened email is scraped and preprocessed (stopword and punctuation removal, uniform capitalization, and stemming)
+2. For each Smarter Reply, a bag-of-words (BoW) model is fitted from the previous emails associated with that Smarter Reply
+3. The BoW model produces a vector for the input email, x_i, and each associated email, y_0, y_1, ..., y_n
+4. y_0, y_1, ..., y_n are summed to create y, a vector representing word frequencies across all associated emails
+5. Cosine similarity between x_i and y is calculated, and the Smarter Replies with the highest similarity measures are returned to the frontend
