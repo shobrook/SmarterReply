@@ -5,8 +5,7 @@
 
 Gmail has a feature called "Smart Reply," where users can select from a list of recommended responses when replying to an email. But Gmail doesn't allow you to create your own smart replies. _Smarter_ Reply for Gmail is a Chrome extension which does let you create custom replies, and will learn to recommend the right reply for a given email.
 
-<!--Screenshot of regular Smart Replies side-by-side with Smart(er) Replies-->
-<img width="653" alt="Screen Shot 2021-01-25 at 5 12 45 AM" src="https://user-images.githubusercontent.com/33335169/105692175-172b8700-5ecc-11eb-8c9c-7f7bed7a21b9.png">
+<img src="assets/demo.png" />
 
 ## Installation
 
@@ -44,7 +43,7 @@ Smarter Reply is written in pure Javascript and has no dependencies. The event l
 2. Content script scrapes the email content and sends it back to the background script
 3. Background script searches the Chrome cache for the best matching Smarter Replies (\*) and sends them to the content script
 4. Content script injects JS into the Gmail frontend to render the Smarter Replies
-5. When a Smarter Reply is created, clicked, or deleted on the frontend, the content script sends a signal to the background to update the Chrome cache 
+5. When a Smarter Reply is created, clicked, or deleted on the frontend, the content script sends a signal to the background to update the Chrome cache
 
 \* Smarter Replies are recommended by a unigram model, which calculates the similarity of the received email to the set of emails associated with each Smart Reply. Here's how it works:
 
