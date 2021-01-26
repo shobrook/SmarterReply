@@ -509,7 +509,6 @@ chrome.runtime.onConnect.addListener(port => {
         });
       });
     } else if (msg.title === "deleteSmartReplies") {
-      // 1. Delete the smart replies from chrome cache
       storage.remove(msg.smartReplyTitles);
       chrome.tabs.sendMessage(activeTabID, { message: "injectScraper" });
     }
