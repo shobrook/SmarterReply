@@ -15,7 +15,9 @@ You can download the extension on the [Chrome web store](). Or you can install t
 
 Before using Smarter Reply, go to your Gmail settings and enable Smart Compose. It is usually enabled by default.
 
-<img width="589" alt="smart_compose_setting" src="https://user-images.githubusercontent.com/33335169/105696259-121d0680-5ed1-11eb-8a94-cd62e083c3f6.png">
+<p align="center">
+  <img width="589" alt="smart_compose_setting" src="https://user-images.githubusercontent.com/33335169/105696259-121d0680-5ed1-11eb-8a94-cd62e083c3f6.png">
+</p>
 
 ### 1. Creating a Smarter Reply
 
