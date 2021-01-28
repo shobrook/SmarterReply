@@ -21,7 +21,9 @@ Before using Smarter Reply, go to your Gmail settings and enable Smart Compose. 
 
 To create a Smarter Reply, open an email that already has smart replies. Click the "+" button and you should see a prompt for creating a new smart reply. Enter the title and body of your message and then click "Create."
 
-<img src="assets/create_smarter_reply.png" />
+<p align="center">
+  <img width="65%" src="assets/create_smarter_reply.png" />
+</p>
 
 ### 2. Using a Smarter Reply
 
