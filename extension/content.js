@@ -70,6 +70,7 @@ const customSmartReplyPayload = smartReplies => {
 
   var uniqueSmartReplyId = 0;
 
+// Create New Smart Elements
   const createNewSmartElement = (
     html,
     onClick,
@@ -195,6 +196,7 @@ const customSmartReplyPayload = smartReplies => {
   }
 
   // Creates a "New Custom Smart Reply" button
+  // Plus button to add Smarter Replies
   createNewSmartElement(
     `<b style='color: #767676;'>＋</b>`,
     () => {
@@ -384,6 +386,7 @@ const customSmartReplyPayload = smartReplies => {
   var isMinusButtonActive = false;
 
   // Creates a "New Custom Smart Reply" button
+  // Minus button to remove Smarter Replies
   createNewSmartElement(
     `<b style='color: #767676;'>-</b>`,
     e => {
@@ -438,18 +441,16 @@ const customSmartReplyPayload = smartReplies => {
               smartReply.style.backgroundColor = "#EA526F";
               smartReply.selected = "true";
               smartRepliesToBeDeleted.push(smartReply);
-              console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
             } else {
               smartReply.getElementsByTagName("span")[0].style.color = "#767676";
               smartReply.style.backgroundColor = "#DADCE0";
               smartReply.selected = "false";
               let indexOfSR = smartRepliesToBeDeleted.indexOf(smartReply);
               smartRepliesToBeDeleted.splice(indexOfSR, 1);
-              console.log("Going to be Deleted: " + smartRepliesToBeDeleted);
             }
 
-            // depending on where the user selects the - button,
-            // e.target Changes
+            // Depending on where the user selects the - button,
+            // e.target changes
             // the code below solves the style error that resulted from that
             let element;
             if (e.target.tagName == "B") {
@@ -488,11 +489,9 @@ const customSmartReplyPayload = smartReplies => {
 // Listens for the "injectScraper" event from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.ping) {
-    console.log("Received ping. Sending pong."); // TEMP
     sendResponse({ pong: true });
     return;
   } else if (request.message === "injectScraper") {
-    console.log("Injecting scraper payload."); // TEMP
     injectJSPayload(scraperPayload);
   }
 });
@@ -505,7 +504,6 @@ const port = chrome.runtime.connect(
 
 port.onMessage.addListener(msg => {
   if (msg.title === "injectSmartReplies") {
-    console.log("Injecting smart reply payload."); // TEMP
     injectJSPayload(customSmartReplyPayload, msg.smartReplies);
   }
 });
