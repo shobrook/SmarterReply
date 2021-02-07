@@ -3,7 +3,7 @@
  ***********/
 
 const injectJSPayload = (payload, args = "") => {
-  // Injecting scraper JS payload
+  // Injects JS into the Gmail frontend
   let script = document.createElement("script");
   script.textContent = `(${payload.toString()})(${JSON.stringify(args)})`;
   document.head.appendChild(script);
@@ -54,10 +54,13 @@ const customSmartReplyPayload = smartReplies => {
     }
   }
 
+  // Prevents repeated injections of Smarter Reply elements
   preventDuplicateButtons("customReply");
   preventDuplicateButtons("customButton");
 
   const injectEmailIntoContainer = email => {
+    // Recursively waits for the email draft container to load and injects a
+    // Smarter Reply message into the container when it does
     let emailContainer = document.getElementsByClassName(
       "Am Al editable LW-avf"
     )[0];
@@ -70,7 +73,9 @@ const customSmartReplyPayload = smartReplies => {
 
   var uniqueSmartReplyId = 0;
 
-// Create New Smart Elements
+  // Smart Elements include Smart(er) Replies, the "Add Smarter Reply" (+) and
+  // "Delete Smarter Reply" (-) buttons, and the "Expand Smarter Reply List"
+  // (>>) button –– basically any new buttons added to the Smart Reply container
   const createNewSmartElement = (
     html,
     onClick,
@@ -80,9 +85,11 @@ const customSmartReplyPayload = smartReplies => {
       isSmartReply: true
     }
   ) => {
+    // Container for existing Smart Replies (created by Gmail)
     let smartRepliesContainer = document.getElementsByClassName("brb")[0];
+    // First Smart Reply button
     let clonedNode = smartRepliesContainer.firstChild.cloneNode(true);
-    clonedNodeClass = clonedNode.getAttribute("class");
+    let clonedNodeClass = clonedNode.getAttribute("class");
 
     if (options.isSmartReply) {
       uniqueSmartReplyId += 1;
@@ -108,14 +115,13 @@ const customSmartReplyPayload = smartReplies => {
   };
 
   // Creates smart reply HTML elements
-  let allSmartReplies = [];
   let hiddenSmartReplies = [];
   for (let idx in smartReplies) {
     let label = smartReplies[idx].label,
       email = smartReplies[idx].email;
     let textColor = "#35AC1A";
 
-    let smartReplyOnClickHandler = () => {
+    const smartReplyOnClickHandler = () => {
       let receivedAuthor = document.getElementsByClassName("gD")[0];
       let receivedSubject = document.getElementsByClassName("hP")[0];
       let receivedEmail = document.getElementsByClassName("a3s aiL ")[0];
@@ -140,8 +146,8 @@ const customSmartReplyPayload = smartReplies => {
 
     let smartReplyButton;
     if (idx > 1) {
-      // Collapsed Smart Replies
-      // creates the smart replies - if there's more than 2 then create hidden smart reply
+      // Collapsed Smart Replies – if there's more than two then create hidden
+      // Smart Replies
       smartReplyButton = createNewSmartElement(
         `<span style='color: ${textColor};'>${label}</span>`,
         smartReplyOnClickHandler,
@@ -153,24 +159,23 @@ const customSmartReplyPayload = smartReplies => {
       );
       hiddenSmartReplies.push(smartReplyButton);
     } else {
-      // if there's two or less, then it just creates more smart replies
       smartReplyButton = createNewSmartElement(
         `<span style='color: ${textColor};'>${label}</span>`,
         smartReplyOnClickHandler
       );
     }
-    allSmartReplies.push(smartReplyButton);
   }
 
   if (hiddenSmartReplies !== undefined && hiddenSmartReplies.length > 0) {
-    // the button that shows/hides smart replies
     var isExpanded = false;
+    // Button that shows/hides Smart Replies
     createNewSmartElement(
       `<span style='color: #767676;'>>></span>`,
       event => {
         if (!isExpanded) {
           let smartRepliesContainer = document.getElementsByClassName("brb")[0];
           for (let idx in hiddenSmartReplies) {
+            // Makes hidden smart replies visible
             smartRepliesContainer.insertBefore(
               hiddenSmartReplies[idx],
               smartRepliesContainer.childNodes[
@@ -184,6 +189,7 @@ const customSmartReplyPayload = smartReplies => {
         } else {
           let smartReplyContainer = document.getElementsByClassName("brb")[0];
           for (let idx in hiddenSmartReplies) {
+            // Hides smart replies
             smartReplyContainer.removeChild(hiddenSmartReplies[idx]);
           }
 
@@ -195,8 +201,7 @@ const customSmartReplyPayload = smartReplies => {
     );
   }
 
-  // Creates a "New Custom Smart Reply" button
-  // Plus button to add Smarter Replies
+  // Creates a "+" button for creating a new smarter reply
   createNewSmartElement(
     `<b style='color: #767676;'>＋</b>`,
     () => {
@@ -329,8 +334,8 @@ const customSmartReplyPayload = smartReplies => {
       document.body.appendChild(createSmartReply);
 
       // Form content
-      let labelContent = document.getElementById("replyTitle");
-      let emailContent = document.getElementById("replyContent");
+      let titleContent = document.getElementById("replyTitle");
+      let bodyContent = document.getElementById("replyContent");
 
       // Buttons
       let exitButton = document.getElementById("exitButton");
@@ -338,11 +343,11 @@ const customSmartReplyPayload = smartReplies => {
       let cancelButton = document.getElementById("cancelButton");
 
       // Changes color of input text to red if title exceeds 30 characters
-      labelContent.addEventListener(
+      titleContent.addEventListener(
         "keyup",
         event => {
           if (event.target.value.length > 30) {
-            event.target.style.color = "#d93025";
+            event.target.style.color = "#D93025";
           } else {
             event.target.style.color = "#202124";
           }
@@ -365,8 +370,8 @@ const customSmartReplyPayload = smartReplies => {
           window.postMessage({
             title: "newCustomSmartReply",
             value: {
-              label: labelContent.value,
-              email: emailContent.value,
+              label: titleContent.value,
+              email: bodyContent.value,
               oldSmartReplies: smartReplies
             }
           });
@@ -385,13 +390,11 @@ const customSmartReplyPayload = smartReplies => {
   var smartRepliesToBeDeleted = [];
   var isMinusButtonActive = false;
 
-  // Creates a "New Custom Smart Reply" button
-  // Minus button to remove Smarter Replies
+  // Creates a "-" button for deleting smarter replies
   createNewSmartElement(
     `<b style='color: #767676;'>-</b>`,
-    e => {
+    event => {
       if (isMinusButtonActive) {
-        // Stuff here handles what happens when minus button is deactivated
         isMinusButtonActive = false;
 
         let titlesOfSmartRepliesToBeDeleted = smartRepliesToBeDeleted.map(smartReply =>
@@ -423,6 +426,7 @@ const customSmartReplyPayload = smartReplies => {
 
           smartReply.selected = "false";
 
+          // Makes smart reply red on hover
           smartReply.onmouseover = () => {
             smartReply.getElementsByTagName("span")[0].style.color = "#FFFFFF";
             smartReply.style.backgroundColor = "#EA526F";
@@ -434,6 +438,7 @@ const customSmartReplyPayload = smartReplies => {
             }
           }
 
+          // Override the on click handlers for smart replies
           smartReply.removeAttribute("data-action-index");
           smartReply.onclick = () => {
             if (smartReply.selected === "false") {
@@ -449,16 +454,17 @@ const customSmartReplyPayload = smartReplies => {
               smartRepliesToBeDeleted.splice(indexOfSR, 1);
             }
 
-            // Depending on where the user selects the - button,
-            // e.target changes
-            // the code below solves the style error that resulted from that
+            // For some reason, depending on where on the "-" button the user
+            // clicks, event.target will be a different element
             let element;
-            if (e.target.tagName == "B") {
-              element = e.target.parentNode;
-            } else if (e.target.tagName == "DIV") {
-              element = e.target;
+            if (event.target.tagName == "B") {
+              element = event.target.parentNode;
+            } else if (event.target.tagName == "DIV") {
+              element = event.target;
             }
 
+            // Change the "-" button style depending on whether smarter replies
+            // are selected or not
             if (smartRepliesToBeDeleted.length > 0) {
               element.style.backgroundColor = "#EA526F";
               let innerText = element.getElementsByTagName("b")[0];
@@ -486,7 +492,7 @@ const customSmartReplyPayload = smartReplies => {
  * MESSAGE PASSING *
  *******************/
 
-// Listens for the "injectScraper" event from the background script
+// Listens for the "injectScraper" trigger from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.ping) {
     sendResponse({ pong: true });
