@@ -294,11 +294,8 @@ const cosineSim = (u, v) => {
        return false;
      }
 
-     // if there's a '/' after the '#', then an email is opened
      let hashIndex = url.indexOf("#");
-     // first, get the part of the url after the #
      let urlAfterHash = url.slice(hashIndex, url.length);
-     // if this part includes a /, then an email is open
      if (urlAfterHash.includes("/")) {
        return true;
      }
