@@ -9,7 +9,7 @@ Gmail has a feature called "Smart Reply," where users can select from a list of 
 
 ## Installation
 
-You can download the extension on the [Chrome web store](). Or you can install the development version of the extension by cloning the repo, navigating to [chrome://extensions/](chrome://extensions/), selecting "Load Unpacked" in the top-left corner, and uploading the repo.
+You can download the extension on the [Chrome web store](https://chrome.google.com/webstore/detail/smarter-reply-for-gmail/mnclffmabpkinejmfajagggbmehcilgi). Or you can install the development version of the extension by cloning the repo, navigating to [chrome://extensions/](chrome://extensions/), selecting "Load Unpacked" in the top-left corner, and uploading the repo.
 
 ## Usage
 
